@@ -55,7 +55,7 @@ const Cart: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Shopping Cart ({items.length}) - BredaBuy</title>
+        <title>{`Shopping Cart (${items.length}) - BredaBuy`}</title>
       </Helmet>
       <Layout>
         <div className="container mx-auto px-4 py-8 md:py-12">
