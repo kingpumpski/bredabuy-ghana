@@ -25,74 +25,35 @@ const queryClient = new QueryClient();
 const App = () => {
 
   return (
-
     <QueryClientProvider client={queryClient}>
 
       <HelmetProvider>
-
         <ThemeProvider>
-
           <CartProvider>
-
             <TooltipProvider>
-
               <Toaster />
-
               <Sonner />
 
-
               <BrowserRouter>
-
+                  {/* future={{
+                    v7_startTransition: true,
+                    v7_relativeSplatPath: true,
+                  }}
+                   */}
                 <Routes>
-
-                  <Route
-                    path="/"
-                    element={<Index />}
-                  />
-
-                  <Route
-                    path="/products"
-                    element={<Products />}
-                  />
-
-                  <Route
-                    path="/product/:id"
-                    element={<ProductDetail />}
-                  />
-
-                  <Route
-                    path="/cart"
-                    element={<Cart />}
-                  />
-
-                  <Route
-                    path="/checkout"
-                    element={<Checkout />}
-                  />
-
-                  <Route
-                    path="/order-success"
-                    element={<OrderSuccess />}
-                  />
-
-                  <Route
-                    path="*"
-                    element={<NotFound />}
-                  />
-
+                  <Route path="/" element={<Index />} />
+                  <Route path="/products" element={<Products />} />
+                  <Route path="/product/:id" element={<ProductDetail />} />
+                  <Route path="/cart" element={<ProductDetail />} />
+                  <Route path="/checkout" element={<Checkout />} />
+                  <Route path="/order-success" element={<OrderSuccess />} />
+                  <Route path="*" element={<NotFound />} />
                 </Routes>
-
               </BrowserRouter>
-
-
             </TooltipProvider>
-
           </CartProvider>
-
         </ThemeProvider>
-
       </HelmetProvider>
-
     </QueryClientProvider>
 
   );

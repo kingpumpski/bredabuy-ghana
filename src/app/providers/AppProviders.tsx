@@ -1,36 +1,24 @@
-import {
-  ReactNode,
-} from "react";
-
-import {
-  QueryProvider,
-} from "./QueryProvider";
-
-import {
-  ThemeProvider,
-} from "./ThemeProvider";
-
+import { ReactNode } from "react";
+import { QueryProvider } from "./QueryProvider";
+import { ThemeProvider } from "./ThemeProvider";
+import { HelmetProvider } from "react-helmet-async";
+import { CartProvider } from "@/context/CartContext";
 
 interface Props {
   children: ReactNode;
 }
 
-
-export function AppProviders({
-  children,
-}: Props){
-
+export function AppProviders({ children }: Props) {
   return (
-
-    <QueryProvider>
-
-      <ThemeProvider>
-
-        {children}
-
-      </ThemeProvider>
-
-    </QueryProvider>
-
+    <HelmetProvider>
+      <QueryProvider>
+        <ThemeProvider>
+          <CartProvider>
+            {children}
+          </CartProvider>
+        </ThemeProvider>
+      </QueryProvider>
+    </HelmetProvider>
   );
+  
 }
