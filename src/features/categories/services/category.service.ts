@@ -1,22 +1,51 @@
-import type {
-  Category,
-  CategoryTree,
-} from "../types/category.types";
+import { products as mockProducts } from "@/data/mockData";
 
-import { mockCategories } from "@/data/mockData";
-
-const categories = mockCategories as unknown as Category[];
+import type { Category } from "../types/category.types";
 
 export const categoryService = {
   async getCategories(): Promise<Category[]> {
-    return [...categories].sort(
-      (a, b) => (a.position ?? 0) - (b.position ?? 0),
+    // const products = mockProducts as any[];
+    const products = mockProducts as unknown as Category[];
+
+    const map = new Map<string, Category>();
+
+    for (const product of products) {
+      if (!product.categoryName) {
+        continue;
+      }
+
+      const id =
+        product.categoryId ||
+        product.categoryName;
+
+      if (!map.has(id)) {
+        map.set(id, {
+          id,
+          name: product.categoryName,
+          slug: product.categoryName
+            .toLowerCase()
+            .trim()
+            .replace(/\s+/g, "-"),
+          productCount: 0,
+        });
+      }
+
+      const category = map.get(id)!;
+      category.productCount =
+        (category.productCount || 0) + 1;
+    }
+
+    return Array.from(map.values()).sort((a, b) =>
+      a.name.localeCompare(b.name),
     );
   },
 
   async getCategory(
     idOrSlug: string,
   ): Promise<Category | null> {
+    const categories =
+      await this.getCategories();
+
     return (
       categories.find(
         (category) =>
@@ -24,22 +53,6 @@ export const categoryService = {
           category.slug === idOrSlug,
       ) ?? null
     );
-  },
-
-  async getCategoryTree(): Promise<CategoryTree[]> {
-    const roots = categories.filter(
-      (category) => !category.parentId,
-    );
-
-    return roots.map((root) => ({
-      ...root,
-      children: categories
-        .filter((category) => category.parentId === root.id)
-        .map((child) => ({
-          ...child,
-          children: [],
-        })),
-    }));
   },
 };
 

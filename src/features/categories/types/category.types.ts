@@ -4,14 +4,10 @@ export interface Category {
   slug: string;
   description?: string;
   image?: string;
-  parentId?: string | null;
+  parentId?: string;
   productCount?: number;
-  isActive?: boolean;
-  position?: number;
+  children?: Category[];
+  isFeatured?: boolean;
   createdAt?: string;
   updatedAt?: string;
-}
-
-export interface CategoryTree extends Category {
-  children: CategoryTree[];
 }

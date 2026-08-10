@@ -9,13 +9,3 @@ export function useBrands() {
     staleTime: 5 * 60 * 1000,
   });
 }
-
-export function useBrand(idOrSlug?: string) {
-  return useQuery({
-    queryKey: ["brand", idOrSlug],
-    queryFn: () =>
-      brandService.getBrand(idOrSlug as string),
-    enabled: Boolean(idOrSlug),
-    staleTime: 5 * 60 * 1000,
-  });
-}

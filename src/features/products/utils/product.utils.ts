@@ -1,54 +1,42 @@
-import type { Product, ProductVariant } from "../types/product.types";
+import type { Product } from "../types/product.types";
 
-export function getProductPrice(
-  product: Product,
-  variant?: ProductVariant,
-): number {
-  return variant?.price ?? product.price;
-}
-
-export function getProductComparePrice(
-  product: Product,
-  variant?: ProductVariant,
-): number | undefined {
-  return variant?.compareAtPrice ?? product.compareAtPrice;
+export function getProductUrl(product: Product): string {
+  return `/products/${product.slug || product.id}`;
 }
 
 export function getProductDiscountPercentage(
   product: Product,
-  variant?: ProductVariant,
 ): number {
-  const price = getProductPrice(product, variant);
-  const comparePrice = getProductComparePrice(product, variant);
-
-  if (!comparePrice || comparePrice <= price) {
+  if (
+    !product.compareAtPrice ||
+    product.compareAtPrice <= product.price
+  ) {
     return 0;
   }
 
-  return Math.round(((comparePrice - price) / comparePrice) * 100);
+  return Math.round(
+    ((product.compareAtPrice - product.price) /
+      product.compareAtPrice) *
+      100,
+  );
 }
 
-export function isProductInStock(
+export function isProductAvailable(
   product: Product,
-  variant?: ProductVariant,
 ): boolean {
-  return (variant?.stock ?? product.stock) > 0;
+  return product.stock > 0;
 }
 
-export function getProductPrimaryImage(
+export function getProductStockStatus(
   product: Product,
-): string | undefined {
-  return [...product.images]
-    .sort((a, b) => a.position - b.position)[0]?.url;
-}
+): "in-stock" | "low-stock" | "out-of-stock" {
+  if (product.stock <= 0) {
+    return "out-of-stock";
+  }
 
-export function formatProductPrice(
-  amount: number,
-  currency: string = "GHS",
-): string {
-  return new Intl.NumberFormat("en-GH", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 2,
-  }).format(amount);
+  if (product.stock <= 5) {
+    return "low-stock";
+  }
+
+  return "in-stock";
 }

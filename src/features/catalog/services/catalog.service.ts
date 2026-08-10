@@ -1,38 +1,43 @@
-import type {
-  CatalogQuery,
-  CatalogResult,
-} from "../types/catalog.types";
+import { products as mockProducts } from "@/data/mockData";
 
-import type { Product } from "@/features/products/types/product.types";
-import {
-  productService,
-  type ProductQuery,
-} from "@/features/products/services/product.service";
+import type { CatalogSummary } from "../types/catalog.types";
 
 export const catalogService = {
-  async search(
-    query: CatalogQuery = {},
-  ): Promise<CatalogResult<Product>> {
-    const productQuery: ProductQuery = {
-      page: query.page,
-      pageSize: query.pageSize,
-      sort:
-        query.sort as ProductQuery["sort"],
-      filters: {
-        search: query.search,
-        category:
-          query.categoryId ?? query.categorySlug,
-        brand:
-          query.brandId ?? query.brandSlug,
-        minPrice: query.minPrice,
-        maxPrice: query.maxPrice,
-        rating: query.rating,
-        inStock: query.inStock,
-        onSale: query.onSale,
-      },
-    };
+  async getSummary(): Promise<CatalogSummary> {
+    // const products = mockProducts as any[];
+    const products = mockProducts as unknown as CatalogSummary[];
 
-    return productService.getProducts(productQuery);
+    const categories = new Set(
+      products
+        .map((product) =>
+          product.categoryId ||
+          product.categoryName,
+        )
+        .filter(Boolean),
+    );
+
+    const brands = new Set(
+      products
+        .map((product) =>
+          product.brandId ||
+          product.brandName,
+        )
+        .filter(Boolean),
+    );
+
+    return {
+      totalProducts: products.length,
+      totalCategories: categories.size,
+      totalBrands: brands.size,
+      featuredProducts: products.filter(
+        (product) => product.isFeatured,
+      ).length,
+      productsOnSale: products.filter(
+        (product) =>
+          product.isOnSale ||
+          Boolean(product.compareAtPrice),
+      ).length,
+    };
   },
 };
 

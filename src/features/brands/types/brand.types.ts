@@ -6,7 +6,6 @@ export interface Brand {
   logo?: string;
   productCount?: number;
   isFeatured?: boolean;
-  isActive?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
