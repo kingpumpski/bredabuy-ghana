@@ -1,5 +1,1 @@
-import PagePlaceholder from "@/shared/components/PagePlaceholder";
-
-export default function AddressBook() {
-  return <PagePlaceholder title="Address Book" />;
-}
+export { default } from "@/features/account/pages/AccountAddressesPage";

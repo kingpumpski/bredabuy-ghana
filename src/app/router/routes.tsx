@@ -37,17 +37,32 @@ import VerifyEmail from "@/features/auth/pages/VerifyEmail";
 import VerifyOtp from "@/features/auth/pages/VerifyOtp";
 import MfaPage from "@/features/auth/pages/MfaPage";
 
-import CustomerDashboard from "@/features/customers/pages/CustomerDashboard";
-import ProfilePage from "@/features/customers/pages/ProfilePage";
-import OrdersPage from "@/features/customers/pages/OrdersPage";
-import OrderDetails from "@/features/customers/pages/OrderDetails";
-import WishlistPage from "@/features/customers/pages/WishlistPage";
-import AddressBook from "@/features/customers/pages/AddressBook";
-import NotificationCenter from "@/features/customers/pages/NotificationCenter";
-import WalletPage from "@/features/customers/pages/WalletPage";
-import ReviewManagement from "@/features/customers/pages/ReviewManagement";
-import SupportPage from "@/features/customers/pages/SupportPage";
-import AccountSecurityPage from "@/features/account/pages/AccountSecurityPage";
+// import CustomerDashboard from "@/features/customers/pages/CustomerDashboard";
+// import ProfilePage from "@/features/customers/pages/ProfilePage";
+// import OrdersPage from "@/features/customers/pages/OrdersPage";
+// import OrderDetails from "@/features/customers/pages/OrderDetails";
+// import WishlistPage from "@/features/customers/pages/WishlistPage";
+// import AddressBook from "@/features/customers/pages/AddressBook";
+// import NotificationCenter from "@/features/customers/pages/NotificationCenter";
+// import WalletPage from "@/features/customers/pages/WalletPage";
+// import ReviewManagement from "@/features/customers/pages/ReviewManagement";
+// import SupportPage from "@/features/customers/pages/SupportPage";
+// import AccountSecurityPage from "@/features/account/pages/AccountSecurityPage";
+
+import {
+  AccountShell,
+  AccountDashboardPage,
+  AccountProfilePage,
+  AccountOrdersPage,
+  AccountOrderDetailsPage,
+  AccountWishlistPage,
+  AccountAddressesPage,
+  AccountNotificationsPage,
+  AccountWalletPage,
+  AccountReviewsPage,
+  AccountSecurityPage,
+  AccountSupportPage,
+} from "@/features/account";
 
 import AdminDashboard from "@/features/admin/pages/AdminDashboard";
 import ProductManagement from "@/features/admin/pages/ProductManagement";
@@ -367,6 +382,11 @@ const router = createBrowserRouter([
         ],
       },
     ],
+  },
+
+  {
+    path: "/unauthorized",
+    element: <Unauthorized />,
   },
 
   {

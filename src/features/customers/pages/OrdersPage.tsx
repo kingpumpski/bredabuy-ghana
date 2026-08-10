@@ -1,5 +1,1 @@
-import PagePlaceholder from "@/shared/components/PagePlaceholder";
-
-export default function OrdersPage() {
-  return <PagePlaceholder title="My Orders" />;
-}
+export { default } from "@/features/account/pages/AccountOrdersPage";

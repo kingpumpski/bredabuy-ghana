@@ -1,5 +1,1 @@
-import PagePlaceholder from "@/shared/components/PagePlaceholder";
-
-export default function NotificationCenter() {
-  return <PagePlaceholder title="Notifications" />;
-}
+export { default } from "@/features/account/pages/AccountNotificationsPage";

@@ -1,5 +1,1 @@
-import PagePlaceholder from "@/shared/components/PagePlaceholder";
-
-export default function ReviewManagement() {
-  return <PagePlaceholder title="My Reviews" />;
-}
+export { default } from "@/features/account/pages/AccountReviewsPage";
