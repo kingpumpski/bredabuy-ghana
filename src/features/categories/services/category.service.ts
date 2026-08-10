@@ -1,12 +1,11 @@
 import { products as mockProducts } from "@/data/mockData";
 
+import type { Product } from "@/features/products/types/product.types";
 import type { Category } from "../types/category.types";
 
 export const categoryService = {
   async getCategories(): Promise<Category[]> {
-    // const products = mockProducts as any[];
-    const products = mockProducts as unknown as Category[];
-
+    const products = mockProducts as unknown as Product[];
     const map = new Map<string, Category>();
 
     for (const product of products) {
@@ -14,9 +13,7 @@ export const categoryService = {
         continue;
       }
 
-      const id =
-        product.categoryId ||
-        product.categoryName;
+      const id = product.categoryId || product.categoryName;
 
       if (!map.has(id)) {
         map.set(id, {
@@ -31,8 +28,7 @@ export const categoryService = {
       }
 
       const category = map.get(id)!;
-      category.productCount =
-        (category.productCount || 0) + 1;
+      category.productCount = (category.productCount || 0) + 1;
     }
 
     return Array.from(map.values()).sort((a, b) =>
@@ -40,17 +36,12 @@ export const categoryService = {
     );
   },
 
-  async getCategory(
-    idOrSlug: string,
-  ): Promise<Category | null> {
-    const categories =
-      await this.getCategories();
+  async getCategory(idOrSlug: string): Promise<Category | null> {
+    const categories = await this.getCategories();
 
     return (
       categories.find(
-        (category) =>
-          category.id === idOrSlug ||
-          category.slug === idOrSlug,
+        (category) => category.id === idOrSlug || category.slug === idOrSlug,
       ) ?? null
     );
   },
