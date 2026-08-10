@@ -10,13 +10,15 @@ export interface Seller {
   slug: string;
   description?: string;
   logo?: string;
-  email?: string;
+  ownerName?: string;
   phone?: string;
+  email?: string;
+  location?: string;
   status: SellerStatus;
   rating?: number;
   reviewCount?: number;
   productCount?: number;
-  verified: boolean;
-  createdAt: string;
-  updatedAt: string;
+  verified?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }

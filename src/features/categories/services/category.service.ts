@@ -1,39 +1,45 @@
-import apiClient from "@/services/api/client";
-
 import type {
   Category,
   CategoryTree,
 } from "../types/category.types";
 
+import { mockCategories } from "@/data/mockData";
+
+const categories = mockCategories as unknown as Category[];
+
 export const categoryService = {
   async getCategories(): Promise<Category[]> {
-    const response = await apiClient.get("/categories");
-
-    return response.data?.items ??
-      response.data ??
-      [];
+    return [...categories].sort(
+      (a, b) => (a.position ?? 0) - (b.position ?? 0),
+    );
   },
 
   async getCategory(
-    idOrSlug: string
+    idOrSlug: string,
   ): Promise<Category | null> {
-    const response = await apiClient.get(
-      `/categories/${idOrSlug}`
+    return (
+      categories.find(
+        (category) =>
+          category.id === idOrSlug ||
+          category.slug === idOrSlug,
+      ) ?? null
     );
-
-    return response.data?.item ??
-      response.data ??
-      null;
   },
 
   async getCategoryTree(): Promise<CategoryTree[]> {
-    const response = await apiClient.get(
-      "/categories/tree"
+    const roots = categories.filter(
+      (category) => !category.parentId,
     );
 
-    return response.data?.items ??
-      response.data ??
-      [];
+    return roots.map((root) => ({
+      ...root,
+      children: categories
+        .filter((category) => category.parentId === root.id)
+        .map((child) => ({
+          ...child,
+          children: [],
+        })),
+    }));
   },
 };
 

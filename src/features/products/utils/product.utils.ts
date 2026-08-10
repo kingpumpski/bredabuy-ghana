@@ -1,39 +1,54 @@
-import type { Product } from "../types/product.types";
+import type { Product, ProductVariant } from "../types/product.types";
 
-export function formatProductPrice(
-  product: Product
-): string {
-  return new Intl.NumberFormat(
-    "en-GH",
-    {
-      style: "currency",
-      currency: product.currency,
-      minimumFractionDigits: 2,
-    }
-  ).format(product.price);
+export function getProductPrice(
+  product: Product,
+  variant?: ProductVariant,
+): number {
+  return variant?.price ?? product.price;
+}
+
+export function getProductComparePrice(
+  product: Product,
+  variant?: ProductVariant,
+): number | undefined {
+  return variant?.compareAtPrice ?? product.compareAtPrice;
 }
 
 export function getProductDiscountPercentage(
-  product: Product
+  product: Product,
+  variant?: ProductVariant,
 ): number {
-  if (
-    !product.compareAtPrice ||
-    product.compareAtPrice <=
-      product.price
-  ) {
+  const price = getProductPrice(product, variant);
+  const comparePrice = getProductComparePrice(product, variant);
+
+  if (!comparePrice || comparePrice <= price) {
     return 0;
   }
 
-  return Math.round(
-    ((product.compareAtPrice -
-      product.price) /
-      product.compareAtPrice) *
-      100
-  );
+  return Math.round(((comparePrice - price) / comparePrice) * 100);
 }
 
-export function isProductAvailable(
-  product: Product
+export function isProductInStock(
+  product: Product,
+  variant?: ProductVariant,
 ): boolean {
-  return product.stock > 0;
+  return (variant?.stock ?? product.stock) > 0;
+}
+
+export function getProductPrimaryImage(
+  product: Product,
+): string | undefined {
+  return [...product.images]
+    .sort((a, b) => a.position - b.position)[0]?.url;
+}
+
+export function formatProductPrice(
+  amount: number,
+  currency: string = "GHS",
+): string {
+  return new Intl.NumberFormat("en-GH", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: 2,
+  }).format(amount);
 }

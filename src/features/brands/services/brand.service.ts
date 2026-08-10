@@ -1,26 +1,34 @@
-import apiClient from "@/services/api/client";
-
 import type { Brand } from "../types/brand.types";
+
+import { mockBrands } from "@/data/mockData";
+
+const brands = mockBrands as unknown as Brand[];
 
 export const brandService = {
   async getBrands(): Promise<Brand[]> {
-    const response = await apiClient.get("/brands");
+    return [...brands].sort((a, b) =>
+      a.name.localeCompare(b.name),
+    );
+  },
 
-    return response.data?.items ??
-      response.data ??
-      [];
+  async getFeaturedBrands(
+    limit = 12,
+  ): Promise<Brand[]> {
+    return brands
+      .filter((brand) => brand.isFeatured)
+      .slice(0, limit);
   },
 
   async getBrand(
-    idOrSlug: string
+    idOrSlug: string,
   ): Promise<Brand | null> {
-    const response = await apiClient.get(
-      `/brands/${idOrSlug}`
+    return (
+      brands.find(
+        (brand) =>
+          brand.id === idOrSlug ||
+          brand.slug === idOrSlug,
+      ) ?? null
     );
-
-    return response.data?.item ??
-      response.data ??
-      null;
   },
 };
 

@@ -59,7 +59,7 @@ export const productService = {
     const filters = query.filters ?? {};
     const sort = query.sort ?? "featured";
 
-    let result = [...catalogue];
+    let result = cloneCatalogue();
 
     if (filters.search) {
       const search =
