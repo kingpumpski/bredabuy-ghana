@@ -271,7 +271,7 @@ const RegisterPage = () => {
             <p className="text-center text-sm text-muted-foreground">
               Already have an account?{" "}
               <Link
-                to="/login"
+                to="/auth/login"
                 className="font-medium text-primary hover:underline"
               >
                 Sign in

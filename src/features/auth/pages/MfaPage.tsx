@@ -115,7 +115,7 @@ const MfaPage = () => {
 
             <p className="text-center text-sm">
               <Link
-                to="/login"
+                to="/auth/login"
                 className="text-primary hover:underline"
               >
                 Use another account

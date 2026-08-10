@@ -135,7 +135,7 @@ const VerifyOtp = () => {
 
             <p className="text-center text-sm text-muted-foreground">
               <Link
-                to="/login"
+                to="/auth/login"
                 className="text-primary hover:underline"
               >
                 Return to login

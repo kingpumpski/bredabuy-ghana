@@ -177,7 +177,7 @@ const LoginPage = () => {
                 </Label>
 
                 <Link
-                  to="/forgot-password"
+                  to="/auth/forgot-password"
                   className="text-sm text-primary hover:underline"
                 >
                   Forgot password?
@@ -245,7 +245,7 @@ const LoginPage = () => {
             <p className="text-center text-sm text-muted-foreground">
               Don't have an account?{" "}
               <Link
-                to="/register"
+                to="/auth/register"
                 className="font-medium text-primary hover:underline"
               >
                 Create one
