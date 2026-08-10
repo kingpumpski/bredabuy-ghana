@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-
 import { HelmetProvider } from "react-helmet-async";
 import {
   QueryClient,
@@ -27,25 +26,22 @@ const queryClient = new QueryClient({
   },
 });
 
-const AppProviders = ({
+export default function AppProviders({
   children,
-}: AppProvidersProps) => {
+}: AppProvidersProps) {
   return (
     <HelmetProvider>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <CartProvider>
             <TooltipProvider>
+              {children}
               <Toaster />
               <Sonner />
-
-              {children}
             </TooltipProvider>
           </CartProvider>
         </ThemeProvider>
       </QueryClientProvider>
     </HelmetProvider>
   );
-};
-
-export default AppProviders;
+}

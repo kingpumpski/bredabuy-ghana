@@ -2,24 +2,26 @@ import { Navigate, Outlet, useLocation } from "react-router-dom";
 
 import { useAuthStore } from "@/features/auth/store/auth.store";
 
-const ProtectedRoute = () => {
+export default function ProtectedRoute() {
   const location = useLocation();
 
   const isAuthenticated = useAuthStore(
     (state) => state.isAuthenticated
   );
 
-  const isInitializing = useAuthStore(
-    (state) => state.isInitializing
+  const isLoading = useAuthStore(
+    (state) => state.isLoading
   );
 
-  if (isInitializing) {
+  if (isLoading) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center">
+      <div className="flex min-h-[60vh] items-center justify-center">
         <div className="text-center">
-          <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-          <p className="text-sm text-muted-foreground">
+          <div className="mb-3 text-lg font-semibold">
             Loading your session...
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Please wait.
           </p>
         </div>
       </div>
@@ -39,6 +41,4 @@ const ProtectedRoute = () => {
   }
 
   return <Outlet />;
-};
-
-export default ProtectedRoute;
+}

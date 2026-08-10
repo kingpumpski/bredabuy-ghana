@@ -3,7 +3,7 @@ import { Navigate, Outlet } from "react-router-dom";
 import { useAuthStore } from "@/features/auth/store/auth.store";
 import { isAdminRole } from "@/features/auth/utils/auth.utils";
 
-const AdminRoute = () => {
+export default function AdminRoute() {
   const user = useAuthStore((state) => state.user);
 
   if (!user) {
@@ -15,6 +15,4 @@ const AdminRoute = () => {
   }
 
   return <Outlet />;
-};
-
-export default AdminRoute;
+}

@@ -1,28 +1,17 @@
-import {
-  ReactNode,
-} from "react";
+import type { ReactNode } from "react";
 
-import {
-  ThemeProvider as NextThemesProvider,
-} from "next-themes";
-
+import { ThemeProvider as ApplicationThemeProvider } from "@/context/ThemeContext";
 
 interface Props {
   children: ReactNode;
 }
 
-
-export function ThemeProvider({
-  children,
-}: Props){
-
+export function ThemeProvider({ children }: Props) {
   return (
-    <NextThemesProvider
-      attribute="class"
-      defaultTheme="system"
-      enableSystem
-    >
+    <ApplicationThemeProvider>
       {children}
-    </NextThemesProvider>
+    </ApplicationThemeProvider>
   );
 }
+
+export default ThemeProvider;

@@ -1,9 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 
-import { RouterProvider } from "react-router-dom";
-
-import { router } from "@/app/router";
+import App from "@/App";
 import AppProviders from "@/app/providers/AppProviders";
 
 import "@/index.css";
@@ -19,7 +17,7 @@ if (!rootElement) {
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <AppProviders>
-      <RouterProvider router={router} />
+      <App />
     </AppProviders>
   </React.StrictMode>
 );

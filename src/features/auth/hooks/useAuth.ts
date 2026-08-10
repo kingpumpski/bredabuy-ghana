@@ -94,7 +94,7 @@ export const useAuth = () => {
         await authService.logout();
       } finally {
         clearSession();
-        navigate("/login");
+        navigate("/auth/login");
       }
     },
     [clearSession, navigate]

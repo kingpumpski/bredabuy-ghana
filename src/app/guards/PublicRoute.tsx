@@ -2,7 +2,7 @@ import { Navigate, Outlet } from "react-router-dom";
 
 import { useAuthStore } from "@/features/auth/store/auth.store";
 
-const PublicRoute = () => {
+export default function PublicRoute() {
   const isAuthenticated = useAuthStore(
     (state) => state.isAuthenticated
   );
@@ -12,6 +12,4 @@ const PublicRoute = () => {
   }
 
   return <Outlet />;
-};
-
-export default PublicRoute;
+}

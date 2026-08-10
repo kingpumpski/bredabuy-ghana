@@ -1,23 +1,21 @@
-import {Outlet} from "react-router-dom";
+import { Outlet } from "react-router-dom";
 
-export default function MainLayout(){
+import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
+import ChatWidget from "@/components/chat/ChatWidget";
 
-return(
-<div className="min-h-screen flex flex-col">
+export default function MainLayout() {
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      <Header />
 
-<header className="p-4 border-b">
-BredaBuy Ghana
-</header>
+      <main className="min-h-[60vh]">
+        <Outlet />
+      </main>
 
-<main className="flex-1">
-<Outlet/>
-</main>
+      <Footer />
 
-<footer className="p-4 border-t">
-© BredaBuy Ghana
-</footer>
-
-</div>
-)
-
+      <ChatWidget />
+    </div>
+  );
 }
