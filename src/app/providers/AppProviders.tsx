@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+
 import { HelmetProvider } from "react-helmet-async";
 import {
   QueryClient,
@@ -10,8 +11,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 
 import { CartProvider } from "@/context/CartContext";
-import AuthSessionProvider from "@/features/auth/components/AuthSessionProvider";
 import { ThemeProvider } from "@/context/ThemeContext";
+import AuthSessionProvider from "@/features/auth/components/AuthSessionProvider";
 
 interface AppProvidersProps {
   children: ReactNode;
@@ -32,17 +33,20 @@ export default function AppProviders({
 }: AppProvidersProps) {
   return (
     <HelmetProvider>
-      <QueryClientProvider client={queryClient}>
+      <QueryClientProvider
+        client={queryClient}
+      >
         <ThemeProvider>
           <AuthSessionProvider>
-        <CartProvider>
-            <TooltipProvider>
-              {children}
-              <Toaster />
-              <Sonner />
-            </TooltipProvider>
+            <CartProvider>
+              <TooltipProvider>
+                {children}
+
+                <Toaster />
+                <Sonner />
+              </TooltipProvider>
             </CartProvider>
-      </AuthSessionProvider>
+          </AuthSessionProvider>
         </ThemeProvider>
       </QueryClientProvider>
     </HelmetProvider>

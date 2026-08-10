@@ -24,6 +24,7 @@ import Cart from "@/pages/Cart";
 import Checkout from "@/pages/Checkout";
 import OrderSuccess from "@/pages/OrderSuccess";
 import NotFound from "@/pages/NotFound";
+import Unauthorized from "@/pages/Unauthorized";
 
 import ProductCataloguePage from "@/features/products/pages/ProductCataloguePage";
 import ProductDetailsPage from "@/features/products/pages/ProductDetailsPage";
@@ -46,6 +47,7 @@ import NotificationCenter from "@/features/customers/pages/NotificationCenter";
 import WalletPage from "@/features/customers/pages/WalletPage";
 import ReviewManagement from "@/features/customers/pages/ReviewManagement";
 import SupportPage from "@/features/customers/pages/SupportPage";
+import AccountSecurityPage from "@/features/account/pages/AccountSecurityPage";
 
 import AdminDashboard from "@/features/admin/pages/AdminDashboard";
 import ProductManagement from "@/features/admin/pages/ProductManagement";
@@ -140,6 +142,10 @@ const router = createBrowserRouter([
         path: "contact",
         element: <Contact />,
       },
+      {
+        path: "unauthorized",
+        element: <Unauthorized />,
+      },
     ],
   },
 
@@ -227,6 +233,10 @@ const router = createBrowserRouter([
           {
             path: "/account/support",
             element: <SupportPage />,
+          },
+          {
+            path: "/account/security",
+            element: <AccountSecurityPage />,
           },
         ],
       },

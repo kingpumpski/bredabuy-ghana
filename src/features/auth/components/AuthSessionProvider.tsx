@@ -32,6 +32,10 @@ export default function AuthSessionProvider({
     (state) => state.setStatus
   );
 
+  const setError = useAuthStore(
+    (state) => state.setError
+  );
+
   useEffect(() => {
     if (initialized.current) {
       return;
@@ -45,22 +49,28 @@ export default function AuthSessionProvider({
         return;
       }
 
-      try {
-        setStatus("initializing");
+      setStatus("initializing");
 
-        const response =
-          await authService.me();
+      try {
+        const response = await authService.me();
 
         if (
           response.success &&
           response.session
         ) {
           setSession(response.session);
-        } else {
-          clearSession();
+          return;
         }
-      } catch {
+
         clearSession();
+      } catch (error) {
+        clearSession();
+
+        setError(
+          error instanceof Error
+            ? error.message
+            : "Unable to restore your session."
+        );
       }
     };
 
@@ -68,6 +78,7 @@ export default function AuthSessionProvider({
   }, [
     clearSession,
     session,
+    setError,
     setSession,
     setStatus,
   ]);

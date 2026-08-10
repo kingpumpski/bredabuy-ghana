@@ -1,52 +1,75 @@
-import type { UserRole } from "../types/auth.types";
+import type { AuthUser, UserRole } from "../types/auth.types";
 
-export const isAdminRole = (role?: UserRole | null) =>
-  role === "administrator" ||
-  role === "super_admin";
+export const ADMIN_ROLES: UserRole[] = [
+  "administrator",
+  "super_admin",
+];
 
-export const isSellerRole = (role?: UserRole | null) =>
-  role === "seller" ||
-  role === "vendor";
+export const SELLER_ROLES: UserRole[] = [
+  "seller",
+  "vendor",
+];
 
-export const isStaffRole = (role?: UserRole | null) =>
-  role === "administrator" ||
-  role === "super_admin" ||
-  role === "warehouse_staff" ||
-  role === "finance_officer" ||
-  role === "customer_service";
+export const CUSTOMER_ROLES: UserRole[] = [
+  "customer",
+];
 
-export const isCustomerRole = (role?: UserRole | null) =>
-  role === "customer";
+export const OPERATIONS_ROLES: UserRole[] = [
+  "rider",
+  "warehouse_staff",
+  "finance_officer",
+  "customer_service",
+];
+
+export const isAdminRole = (role?: UserRole | null): boolean =>
+  Boolean(role && ADMIN_ROLES.includes(role));
+
+export const isSellerRole = (role?: UserRole | null): boolean =>
+  Boolean(role && SELLER_ROLES.includes(role));
+
+export const isCustomerRole = (role?: UserRole | null): boolean =>
+  Boolean(role && CUSTOMER_ROLES.includes(role));
+
+export const isOperationsRole = (
+  role?: UserRole | null
+): boolean =>
+  Boolean(role && OPERATIONS_ROLES.includes(role));
+
+export const hasAnyRole = (
+  user: AuthUser | null | undefined,
+  roles: UserRole[]
+): boolean => {
+  if (!user) return false;
+
+  return roles.includes(user.role);
+};
+
+export const canAccessAdmin = (
+  user: AuthUser | null | undefined
+): boolean => isAdminRole(user?.role);
+
+export const canAccessSeller = (
+  user: AuthUser | null | undefined
+): boolean => isSellerRole(user?.role);
+
+export const canAccessCustomerAccount = (
+  user: AuthUser | null | undefined
+): boolean =>
+  Boolean(user) &&
+  !isAdminRole(user?.role) &&
+  !isSellerRole(user?.role);
 
 export const getDefaultRouteForRole = (
   role?: UserRole | null
-) => {
-  if (!role) {
-    return "/auth/login";
-  }
+): string => {
+  if (!role) return "/";
 
-  if (role === "super_admin" || role === "administrator") {
+  if (isAdminRole(role)) {
     return "/admin";
   }
 
-  if (role === "seller" || role === "vendor") {
+  if (isSellerRole(role)) {
     return "/seller";
-  }
-
-  if (role === "warehouse_staff") {
-    return "/warehouse";
-  }
-
-  if (role === "finance_officer") {
-    return "/finance";
-  }
-
-  if (role === "customer_service") {
-    return "/support";
-  }
-
-  if (role === "rider") {
-    return "/logistics";
   }
 
   return "/account";

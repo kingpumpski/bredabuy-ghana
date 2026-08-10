@@ -1,6 +1,6 @@
 import axios, {
   AxiosError,
-  InternalAxiosRequestConfig,
+  type InternalAxiosRequestConfig,
 } from "axios";
 
 const API_URL =
@@ -9,20 +9,33 @@ const API_URL =
 
 export const apiClient = axios.create({
   baseURL: API_URL,
-  timeout: 30000,
+  timeout: 30_000,
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem("access_token");
+    try {
+      const storedAuth = localStorage.getItem(
+        "bredabuy-auth"
+      );
 
-    if (token) {
-      config.headers.Authorization =
-        `Bearer ${token}`;
+      if (storedAuth) {
+        const parsed = JSON.parse(storedAuth);
+
+        const token =
+          parsed?.state?.session?.accessToken;
+
+        if (token) {
+          config.headers.Authorization =
+            `Bearer ${token}`;
+        }
+      }
+    } catch {
+      // Invalid persisted auth state should never
+      // prevent an API request from being created.
     }
 
     return config;
@@ -30,46 +43,30 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-
 apiClient.interceptors.response.use(
   (response) => response,
 
   (error: AxiosError) => {
-
     if (error.response) {
-
-      switch(error.response.status){
-
-        case 401:
-          console.warn(
-            "Authentication required"
-          );
-          break;
-
-        case 403:
-          console.warn(
-            "Access denied"
-          );
-          break;
-
-        default:
-          console.error(
-            "API Error:",
-            error.response.status
-          );
+      if (error.response.status === 403) {
+        console.warn("Access denied");
       }
 
-    } else if(error.request){
-
-      console.error(
-        "Network error"
-      );
-
+      if (
+        error.response.status !== 401 &&
+        error.response.status !== 403
+      ) {
+        console.error(
+          "API Error:",
+          error.response.status
+        );
+      }
+    } else if (error.request) {
+      console.error("Network error");
     }
 
     return Promise.reject(error);
   }
 );
-
 
 export default apiClient;
