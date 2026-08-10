@@ -1,12 +1,17 @@
+import apiClient from "@/services/api/client";
+
 import type {
   Product,
   ProductFilters,
   ProductSort,
 } from "../types/product.types";
 
-import { products as mockProducts } from "@/data/mockData";
+import {
+  products as mockProducts,
+} from "@/data/mockData";
 
-const catalogue = mockProducts as unknown as Product[];
+const catalogue =
+  mockProducts as unknown as Product[];
 
 export interface ProductQuery {
   page?: number;
@@ -26,10 +31,29 @@ export interface ProductResult {
 const normalize = (value: string) =>
   value.trim().toLowerCase();
 
+const useMockCatalogue =
+  import.meta.env.VITE_USE_MOCK_DATA !== "false";
+
 export const productService = {
   async getProducts(
     query: ProductQuery = {}
   ): Promise<ProductResult> {
+    if (!useMockCatalogue) {
+      const response = await apiClient.get(
+        "/products",
+        {
+          params: {
+            page: query.page,
+            pageSize: query.pageSize,
+            ...query.filters,
+            sort: query.sort,
+          },
+        }
+      );
+
+      return response.data;
+    }
+
     const page = query.page ?? 1;
     const pageSize = query.pageSize ?? 12;
     const filters = query.filters ?? {};
@@ -38,7 +62,8 @@ export const productService = {
     let result = [...catalogue];
 
     if (filters.search) {
-      const search = normalize(filters.search);
+      const search =
+        normalize(filters.search);
 
       result = result.filter((product) =>
         [
@@ -46,6 +71,7 @@ export const productService = {
           product.description,
           product.categoryName,
           product.brandName ?? "",
+          product.sellerName ?? "",
           ...(product.tags ?? []),
         ]
           .join(" ")
@@ -57,16 +83,28 @@ export const productService = {
     if (filters.category) {
       result = result.filter(
         (product) =>
-          product.categoryId === filters.category ||
-          product.categoryName === filters.category
+          product.categoryId ===
+            filters.category ||
+          product.categoryName ===
+            filters.category
       );
     }
 
     if (filters.brand) {
       result = result.filter(
         (product) =>
-          product.brandId === filters.brand ||
-          product.brandName === filters.brand
+          product.brandId ===
+            filters.brand ||
+          product.brandName ===
+            filters.brand
+      );
+    }
+
+    if (filters.seller) {
+      result = result.filter(
+        (product) =>
+          product.sellerId ===
+            filters.seller
       );
     }
 
@@ -75,7 +113,8 @@ export const productService = {
     ) {
       result = result.filter(
         (product) =>
-          product.price >= filters.minPrice!
+          product.price >=
+          filters.minPrice!
       );
     }
 
@@ -84,7 +123,8 @@ export const productService = {
     ) {
       result = result.filter(
         (product) =>
-          product.price <= filters.maxPrice!
+          product.price <=
+          filters.maxPrice!
       );
     }
 
@@ -106,7 +146,16 @@ export const productService = {
       result = result.filter(
         (product) =>
           product.isOnSale ||
-          Boolean(product.compareAtPrice)
+          Boolean(
+            product.compareAtPrice
+          )
+      );
+    }
+
+    if (filters.featured) {
+      result = result.filter(
+        (product) =>
+          product.isFeatured === true
       );
     }
 
@@ -134,8 +183,12 @@ export const productService = {
       case "newest":
         result.sort(
           (a, b) =>
-            new Date(b.createdAt).getTime() -
-            new Date(a.createdAt).getTime()
+            new Date(
+              b.createdAt
+            ).getTime() -
+            new Date(
+              a.createdAt
+            ).getTime()
         );
         break;
 
@@ -150,25 +203,28 @@ export const productService = {
       default:
         result.sort(
           (a, b) =>
-            Number(Boolean(b.isFeatured)) -
-            Number(Boolean(a.isFeatured))
+            Number(
+              Boolean(b.isFeatured)
+            ) -
+            Number(
+              Boolean(a.isFeatured)
+            )
         );
     }
 
     const total = result.length;
+
     const totalPages =
       Math.ceil(total / pageSize);
 
     const start =
       (page - 1) * pageSize;
 
-    const items = result.slice(
-      start,
-      start + pageSize
-    );
-
     return {
-      items,
+      items: result.slice(
+        start,
+        start + pageSize
+      ),
       total,
       page,
       pageSize,
@@ -179,6 +235,17 @@ export const productService = {
   async getProduct(
     idOrSlug: string
   ): Promise<Product | null> {
+    if (!useMockCatalogue) {
+      const response =
+        await apiClient.get(
+          `/products/${idOrSlug}`
+        );
+
+      return response.data?.item ??
+        response.data ??
+        null;
+    }
+
     return (
       catalogue.find(
         (product) =>
@@ -191,24 +258,38 @@ export const productService = {
   async getFeaturedProducts(
     limit = 8
   ): Promise<Product[]> {
-    return catalogue
-      .filter(
-        (product) => product.isFeatured
-      )
-      .slice(0, limit);
+    const result =
+      await this.getProducts({
+        page: 1,
+        pageSize: limit,
+        filters: {
+          featured: true,
+        },
+        sort: "featured",
+      });
+
+    return result.items;
   },
 
   async getRelatedProducts(
     product: Product,
     limit = 4
   ): Promise<Product[]> {
-    return catalogue
-      .filter(
-        (item) =>
-          item.id !== product.id &&
-          item.categoryId ===
-            product.categoryId
-      )
-      .slice(0, limit);
+    const result =
+      await this.getProducts({
+        page: 1,
+        pageSize: limit,
+        filters: {
+          category:
+            product.categoryId,
+        },
+      });
+
+    return result.items.filter(
+      (item) =>
+        item.id !== product.id
+    );
   },
 };
+
+export default productService;

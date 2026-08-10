@@ -45,7 +45,6 @@ export interface Product {
   currency: "GHS";
 
   images: ProductImage[];
-
   variants?: ProductVariant[];
 
   rating: ProductRating;
@@ -69,11 +68,13 @@ export interface ProductFilters {
   search?: string;
   category?: string;
   brand?: string;
+  seller?: string;
   minPrice?: number;
   maxPrice?: number;
   rating?: number;
   inStock?: boolean;
   onSale?: boolean;
+  featured?: boolean;
 }
 
 export type ProductSort =
@@ -83,3 +84,18 @@ export type ProductSort =
   | "price-high"
   | "rating"
   | "popular";
+
+export interface ProductQuery {
+  page?: number;
+  pageSize?: number;
+  filters?: ProductFilters;
+  sort?: ProductSort;
+}
+
+export interface ProductResult {
+  items: Product[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
