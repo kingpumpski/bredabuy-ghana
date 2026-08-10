@@ -10,6 +10,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 
 import { CartProvider } from "@/context/CartContext";
+import AuthSessionProvider from "@/features/auth/components/AuthSessionProvider";
 import { ThemeProvider } from "@/context/ThemeContext";
 
 interface AppProvidersProps {
@@ -33,13 +34,15 @@ export default function AppProviders({
     <HelmetProvider>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
-          <CartProvider>
+          <AuthSessionProvider>
+        <CartProvider>
             <TooltipProvider>
               {children}
               <Toaster />
               <Sonner />
             </TooltipProvider>
-          </CartProvider>
+            </CartProvider>
+      </AuthSessionProvider>
         </ThemeProvider>
       </QueryClientProvider>
     </HelmetProvider>

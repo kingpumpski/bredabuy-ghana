@@ -9,6 +9,14 @@ export type UserRole =
   | "finance_officer"
   | "customer_service";
 
+export type AuthStatus =
+  | "idle"
+  | "initializing"
+  | "authenticated"
+  | "unauthenticated"
+  | "refreshing"
+  | "error";
+
 export interface AuthUser {
   id: string;
   email: string;
@@ -16,7 +24,9 @@ export interface AuthUser {
   lastName?: string;
   phone?: string;
   avatarUrl?: string;
+
   role: UserRole;
+
   emailVerified: boolean;
   phoneVerified: boolean;
   mfaEnabled: boolean;
@@ -62,4 +72,14 @@ export interface AuthResponse {
   success: boolean;
   message?: string;
   session?: AuthSession;
+  requiresMfa?: boolean;
+  requiresEmailVerification?: boolean;
+}
+
+export interface AuthState {
+  user: AuthUser | null;
+  session: AuthSession | null;
+  status: AuthStatus;
+  error: string | null;
+  isAuthenticated: boolean;
 }
