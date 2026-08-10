@@ -1,13 +1,20 @@
-import {Navigate,Outlet} from "react-router-dom";
+import { Navigate, Outlet } from "react-router-dom";
 
-export default function SellerRoute(){
+import { useAuthStore } from "@/features/auth/store/auth.store";
+import { isSellerRole } from "@/features/auth/utils/auth.utils";
 
-const role="seller";
+const SellerRoute = () => {
+  const user = useAuthStore((state) => state.user);
 
+  if (!user) {
+    return <Navigate to="/auth/login" replace />;
+  }
 
-return role==="seller"
-?<Outlet/>
-:<Navigate to="/"/>
+  if (!isSellerRole(user.role)) {
+    return <Navigate to="/account" replace />;
+  }
 
-}
+  return <Outlet />;
+};
 
+export default SellerRoute;

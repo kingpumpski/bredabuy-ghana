@@ -1,3 +1,7 @@
+import {
+useProduct,
+} from "../hooks/useProducts";
+import type { Product } from "../types/product.types";
 import React, { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
@@ -50,10 +54,18 @@ const ProductDetail: React.FC = () => {
   const vat = subtotal * VAT_RATE;
   const total = subtotal + vat;
 
+  // const handleAddToCart = () => {
+  //   for (let i = 0; i < quantity; i++) {
+  //     addToCart(product);
+  //   }
+  // };
+
+  // const handleAddToCart = () => {
+  //   addToCart(product);
+  // };
+
   const handleAddToCart = () => {
-    for (let i = 0; i < quantity; i++) {
-      addToCart(product);
-    }
+    addToCart(product, quantity);
   };
 
   return (

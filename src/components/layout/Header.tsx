@@ -1,206 +1,225 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Search, ShoppingCart, User, Menu, X, Sun, Moon, Heart } from "lucide-react";
+import {
+  Heart,
+  Menu,
+  ShoppingCart,
+} from "lucide-react";
+
+import { Link } from "react-router-dom";
+
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+
 import { useCart } from "@/context/CartContext";
-import { useTheme } from "@/context/ThemeContext";
-import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/features/auth/store/auth.store";
 
-const Header: React.FC = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const { totalItems } = useCart();
-  const { theme, toggleTheme } = useTheme();
-  const navigate = useNavigate();
+import ThemeToggle from "./ThemeToggle";
+import StorefrontSearch from "./StorefrontSearch";
+import AccountMenu from "./AccountMenu";
+import StorefrontNavigation from "./StorefrontNavigation";
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/products?search=${encodeURIComponent(searchQuery)}`);
-    }
-  };
+const Header = () => {
+  const user = useAuthStore(
+    (state) => state.user
+  );
 
-  const navLinks = [
-    { name: "Home", path: "/" },
-    { name: "Products", path: "/products" },
-    { name: "Categories", path: "/categories" },
-    { name: "Deals", path: "/deals" },
-    { name: "About", path: "/about" },
-  ];
+  const {
+    items,
+  } = useCart();
+
+  // const cartCount = Array.isArray(items)
+  //   ? items.reduce(
+  //       (total: number, item: any) =>
+  //         total + (item.quantity || 1),
+  //       0
+  //     )
+  //   : 0;
+
+  const cartCount = Array.isArray(items)
+    ? items.reduce(
+        (total, item) => total + (item.quantity || 1),
+        0
+      )
+    : 0;
 
   return (
-    <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-md border-b border-border shadow-soft">
-      {/* Top bar */}
-      <div className="bg-primary text-primary-foreground py-2 px-4 text-center text-sm font-medium">
-        🎉 Free delivery on orders above GH₵500 | Use code: BREDA10 for 10% off!
-      </div>
+    <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
 
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16 md:h-20">
+
+        <div className="flex min-h-16 items-center gap-3">
+
+          {/* Mobile navigation */}
+
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden"
+                aria-label="Open navigation"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+
+            <SheetContent
+              side="left"
+              className="w-[300px] sm:w-[360px]"
+            >
+              <div className="mt-8 flex flex-col gap-4">
+
+                <Link
+                  to="/shop"
+                  className="text-lg font-medium"
+                >
+                  Shop
+                </Link>
+
+                <Link
+                  to="/categories"
+                  className="text-lg font-medium"
+                >
+                  Categories
+                </Link>
+
+                <Link
+                  to="/deals"
+                  className="text-lg font-medium"
+                >
+                  Deals
+                </Link>
+
+                <Link
+                  to="/flash-sales"
+                  className="text-lg font-medium text-destructive"
+                >
+                  Flash Sales
+                </Link>
+
+                <Link
+                  to="/brands"
+                  className="text-lg font-medium"
+                >
+                  Brands
+                </Link>
+
+                <Link
+                  to="/about"
+                  className="text-lg font-medium"
+                >
+                  About
+                </Link>
+
+                <Link
+                  to="/contact"
+                  className="text-lg font-medium"
+                >
+                  Contact
+                </Link>
+
+                {user ? (
+                  <Link
+                    to="/account"
+                    className="text-lg font-medium"
+                  >
+                    My Account
+                  </Link>
+                ) : (
+                  <Link
+                    to="/auth/login"
+                    className="text-lg font-medium"
+                  >
+                    Login
+                  </Link>
+                )}
+
+              </div>
+            </SheetContent>
+          </Sheet>
+
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 group">
-            <div className="w-10 h-10 bg-gradient-gold rounded-xl flex items-center justify-center transform group-hover:rotate-6 transition-transform duration-300">
-              <span className="text-xl font-bold text-primary-foreground">B</span>
-            </div>
-            <span className="text-xl md:text-2xl font-display font-bold text-foreground">
+
+          <Link
+            to="/"
+            className="shrink-0"
+            aria-label="BredaBuy Ghana home"
+          >
+            <div className="text-xl font-black tracking-tight md:text-2xl">
               Breda<span className="text-primary">Buy</span>
-            </span>
+            </div>
+
+            <div className="hidden text-[10px] font-medium text-muted-foreground sm:block">
+              Ghana's Digital Marketplace
+            </div>
           </Link>
 
-          {/* Search bar - Desktop */}
-          <form
-            onSubmit={handleSearch}
-            className="hidden md:flex flex-1 max-w-xl mx-8"
-          >
-            <div className="relative w-full">
-              <input
-                type="text"
-                placeholder="Search for products, brands, and more..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full input-search pl-12 pr-4"
-              />
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <Button
-                type="submit"
-                size="sm"
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full"
-              >
-                Search
-              </Button>
-            </div>
-          </form>
+          {/* Search */}
+
+          <div className="hidden flex-1 px-4 md:block">
+            <StorefrontSearch />
+          </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-2 md:gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleTheme}
-              className="hidden md:flex"
-            >
-              {theme === "light" ? (
-                <Moon className="w-5 h-5" />
-              ) : (
-                <Sun className="w-5 h-5" />
-              )}
-            </Button>
 
-            <Link to="/wishlist" className="hidden md:block">
-              <Button variant="ghost" size="icon">
-                <Heart className="w-5 h-5" />
+          <div className="ml-auto flex items-center gap-1">
+
+            <Link
+              to="/wishlist"
+              className="hidden sm:block"
+            >
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Wishlist"
+              >
+                <Heart className="h-5 w-5" />
               </Button>
             </Link>
 
-            <Link to="/cart" className="relative">
-              <Button variant="ghost" size="icon">
-                <ShoppingCart className="w-5 h-5" />
-                {totalItems > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-accent text-accent-foreground text-xs font-bold rounded-full flex items-center justify-center animate-scale-in">
-                    {totalItems}
-                  </span>
+            <ThemeToggle />
+
+            <AccountMenu />
+
+            <Link to="/cart">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative"
+                aria-label="Shopping cart"
+              >
+                <ShoppingCart className="h-5 w-5" />
+
+                {cartCount > 0 && (
+                  <Badge
+                    className="absolute -right-1 -top-1 h-5 min-w-5 justify-center rounded-full px-1 text-[10px]"
+                  >
+                    {cartCount > 99
+                      ? "99+"
+                      : cartCount}
+                  </Badge>
                 )}
               </Button>
             </Link>
 
-            <Link to="/account" className="hidden md:block">
-              <Button variant="ghost" size="icon">
-                <User className="w-5 h-5" />
-              </Button>
-            </Link>
-
-            {/* Mobile menu button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-            >
-              {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </Button>
           </div>
+
         </div>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-1 pb-3">
-          {navLinks.map((link) => (
-            <Link
-              key={link.path}
-              to={link.path}
-              className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all duration-200"
-            >
-              {link.name}
-            </Link>
-          ))}
-        </nav>
-      </div>
+        {/* Mobile search */}
 
-      {/* Mobile Menu */}
-      <div
-        className={cn(
-          "fixed inset-0 top-[108px] bg-background z-40 transform transition-transform duration-300 md:hidden",
-          isMenuOpen ? "translate-x-0" : "translate-x-full"
-        )}
-      >
-        <div className="container px-4 py-6">
-          {/* Mobile Search */}
-          <form onSubmit={handleSearch} className="mb-6">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search products..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full input-search pl-12"
-              />
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            </div>
-          </form>
-
-          {/* Mobile Nav Links */}
-          <nav className="flex flex-col gap-2">
-            {navLinks.map((link, index) => (
-              <Link
-                key={link.path}
-                to={link.path}
-                onClick={() => setIsMenuOpen(false)}
-                className="px-4 py-3 text-lg font-medium text-foreground hover:bg-muted rounded-xl transition-colors animate-slide-up"
-                style={{ animationDelay: `${index * 0.05}s` }}
-              >
-                {link.name}
-              </Link>
-            ))}
-            <div className="h-px bg-border my-4" />
-            <Link
-              to="/account"
-              onClick={() => setIsMenuOpen(false)}
-              className="px-4 py-3 text-lg font-medium text-foreground hover:bg-muted rounded-xl transition-colors flex items-center gap-3"
-            >
-              <User className="w-5 h-5" />
-              My Account
-            </Link>
-            <button
-              onClick={() => {
-                toggleTheme();
-                setIsMenuOpen(false);
-              }}
-              className="px-4 py-3 text-lg font-medium text-foreground hover:bg-muted rounded-xl transition-colors flex items-center gap-3 w-full text-left"
-            >
-              {theme === "light" ? (
-                <>
-                  <Moon className="w-5 h-5" />
-                  Dark Mode
-                </>
-              ) : (
-                <>
-                  <Sun className="w-5 h-5" />
-                  Light Mode
-                </>
-              )}
-            </button>
-          </nav>
+        <div className="pb-3 md:hidden">
+          <StorefrontSearch />
         </div>
+
       </div>
+
+      <StorefrontNavigation />
+
     </header>
   );
 };

@@ -1,12 +1,20 @@
-import {Navigate,Outlet} from "react-router-dom";
+import { Navigate, Outlet } from "react-router-dom";
 
-export default function AdminRoute(){
+import { useAuthStore } from "@/features/auth/store/auth.store";
+import { isAdminRole } from "@/features/auth/utils/auth.utils";
 
-const role="admin";
+const AdminRoute = () => {
+  const user = useAuthStore((state) => state.user);
 
+  if (!user) {
+    return <Navigate to="/auth/login" replace />;
+  }
 
-return role==="admin"
-?<Outlet/>
-:<Navigate to="/"/>
+  if (!isAdminRole(user.role)) {
+    return <Navigate to="/account" replace />;
+  }
 
-}
+  return <Outlet />;
+};
+
+export default AdminRoute;

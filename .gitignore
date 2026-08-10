@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Temporary development backups
+*.tsx.backup
+*.tsx.backup.*

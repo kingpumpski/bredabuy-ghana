@@ -1,24 +1,51 @@
-import { ReactNode } from "react";
-import { QueryProvider } from "./QueryProvider";
-import { ThemeProvider } from "./ThemeProvider";
-import { HelmetProvider } from "react-helmet-async";
-import { CartProvider } from "@/context/CartContext";
+import type { ReactNode } from "react";
 
-interface Props {
+import { HelmetProvider } from "react-helmet-async";
+import {
+  QueryClient,
+  QueryClientProvider,
+} from "@tanstack/react-query";
+
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+
+import { CartProvider } from "@/context/CartContext";
+import { ThemeProvider } from "@/context/ThemeContext";
+
+interface AppProvidersProps {
   children: ReactNode;
 }
 
-export function AppProviders({ children }: Props) {
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
+
+const AppProviders = ({
+  children,
+}: AppProvidersProps) => {
   return (
     <HelmetProvider>
-      <QueryProvider>
+      <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <CartProvider>
-            {children}
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+
+              {children}
+            </TooltipProvider>
           </CartProvider>
         </ThemeProvider>
-      </QueryProvider>
+      </QueryClientProvider>
     </HelmetProvider>
   );
-  
-}
+};
+
+export default AppProviders;
