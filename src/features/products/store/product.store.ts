@@ -27,6 +27,12 @@ interface ProductStore {
   setPage: (
     page: number
   ) => void;
+
+  hydrate: (
+    filters: ProductFilters,
+    sort: ProductSort,
+    page: number
+  ) => void;
 }
 
 export const useProductStore =
@@ -64,6 +70,13 @@ export const useProductStore =
 
     setPage: (page) =>
       set({
+        page,
+      }),
+
+    hydrate: (filters, sort, page) =>
+      set({
+        filters,
+        sort,
         page,
       }),
   }));
