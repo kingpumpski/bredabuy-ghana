@@ -51,7 +51,7 @@ export default function Brands() {
       {!isLoading && !isError && brands.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {brands.map((brand) => (
-            <Link key={brand.id} to={`/products?brand=${encodeURIComponent(brand.id)}`}>
+            <Link key={brand.id} to={`/products?q=${encodeURIComponent(brand.name)}`}>
               <Card className="h-full transition-shadow hover:shadow-md">
                 <CardContent className="flex h-full items-start justify-between gap-4 p-6">
                   <div>
