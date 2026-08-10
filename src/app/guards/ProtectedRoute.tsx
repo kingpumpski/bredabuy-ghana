@@ -33,9 +33,7 @@ export default function ProtectedRoute() {
       <Navigate
         to="/auth/login"
         replace
-        state={{
-          from: location.pathname,
-        }}
+        state={{ from: location.pathname }}
       />
     );
   }

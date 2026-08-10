@@ -14,7 +14,6 @@ export default function MainLayout() {
       </main>
 
       <Footer />
-
       <ChatWidget />
     </div>
   );
