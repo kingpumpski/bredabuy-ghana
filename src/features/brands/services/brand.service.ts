@@ -1,12 +1,11 @@
 import { products as mockProducts } from "@/data/mockData";
 
+import type { Product } from "@/features/products/types/product.types";
 import type { Brand } from "../types/brand.types";
 
 export const brandService = {
   async getBrands(): Promise<Brand[]> {
-    // const products = mockProducts as any[];
-    const products = mockProducts as unknown as Brand[];
-    
+    const products = mockProducts as unknown as Product[];
     const map = new Map<string, Brand>();
 
     for (const product of products) {
@@ -37,16 +36,12 @@ export const brandService = {
     );
   },
 
-  async getBrand(
-    idOrSlug: string,
-  ): Promise<Brand | null> {
+  async getBrand(idOrSlug: string): Promise<Brand | null> {
     const brands = await this.getBrands();
 
     return (
       brands.find(
-        (brand) =>
-          brand.id === idOrSlug ||
-          brand.slug === idOrSlug,
+        (brand) => brand.id === idOrSlug || brand.slug === idOrSlug,
       ) ?? null
     );
   },
