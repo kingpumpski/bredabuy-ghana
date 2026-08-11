@@ -1,4 +1,4 @@
-import type { CreateOrderPayload, Order } from "../types/order.types";
+import type { CreateOrderPayload, Order, OrderStatus } from "../types/order.types";
 
 const STORAGE_KEY = "bredabuy:orders";
 
@@ -25,7 +25,6 @@ const makeOrderNumber = () =>
 export const orderService = {
   create(payload: CreateOrderPayload): Order {
     const now = new Date().toISOString();
-
     const order: Order = {
       id: crypto.randomUUID(),
       orderNumber: makeOrderNumber(),
@@ -38,16 +37,12 @@ export const orderService = {
     };
 
     writeOrders([order, ...readOrders()]);
-
     return order;
   },
 
   list(customerId?: string): Order[] {
     const orders = readOrders();
-
-    return customerId
-      ? orders.filter((order) => order.customerId === customerId)
-      : orders;
+    return customerId ? orders.filter((order) => order.customerId === customerId) : orders;
   },
 
   getById(id: string): Order | null {
@@ -55,8 +50,24 @@ export const orderService = {
   },
 
   getByOrderNumber(orderNumber: string): Order | null {
-    return (
-      readOrders().find((order) => order.orderNumber === orderNumber) ?? null
-    );
+    return readOrders().find((order) => order.orderNumber === orderNumber) ?? null;
+  },
+
+  updateStatus(id: string, status: OrderStatus): Order | null {
+    const orders = readOrders();
+    const index = orders.findIndex((order) => order.id === id);
+    if (index < 0) return null;
+    const updated = { ...orders[index], status, updatedAt: new Date().toISOString() };
+    orders[index] = updated;
+    writeOrders(orders);
+    return updated;
+  },
+
+  cancel(id: string): Order | null {
+    const order = this.getById(id);
+    if (!order || !["pending", "confirmed"].includes(order.status)) return null;
+    return this.updateStatus(id, "cancelled");
   },
 };
+
+export default orderService;
