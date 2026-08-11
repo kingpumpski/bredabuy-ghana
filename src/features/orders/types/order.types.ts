@@ -1,4 +1,4 @@
-import type { ShippingAddress } from "@/features/shipping/types/shipping.types";
+import type { ShippingAddress, ShippingMethod } from "@/features/shipping/types/shipping.types";
 import type {
   PaymentMethod,
   PaymentStatus,
@@ -54,6 +54,7 @@ export interface Order {
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
   shippingAddress: ShippingAddress;
+  shippingMethod?: ShippingMethod;
   createdAt: string;
   updatedAt: string;
 }
@@ -68,4 +69,5 @@ export interface CreateOrderPayload {
   total: number;
   paymentMethod: PaymentMethod;
   shippingAddress: ShippingAddress;
+  shippingMethod?: ShippingMethod;
 }
