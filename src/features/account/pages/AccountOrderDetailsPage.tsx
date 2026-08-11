@@ -1,4 +1,4 @@
-import { CheckCircle2, Clock3, MapPin, Package, Truck } from "lucide-react";
+import { CheckCircle2, Clock3, ExternalLink, MapPin, Package, Truck } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
@@ -92,13 +92,9 @@ export default function AccountOrderDetailsPage() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle>{order.orderNumber}</CardTitle>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Placed {new Date(order.createdAt).toLocaleString("en-GH")}
-              </p>
+              <p className="mt-1 text-sm text-muted-foreground">Placed {new Date(order.createdAt).toLocaleString("en-GH")}</p>
             </div>
-            <Badge variant={["cancelled", "returned", "refunded"].includes(order.status) ? "destructive" : "secondary"}>
-              {labels[order.status]}
-            </Badge>
+            <Badge variant={["cancelled", "returned", "refunded"].includes(order.status) ? "destructive" : "secondary"}>{labels[order.status]}</Badge>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -120,11 +116,7 @@ export default function AccountOrderDetailsPage() {
               <div className="min-w-0 flex-1">
                 <p className="font-semibold">{item.name}</p>
                 <p className="text-xs text-muted-foreground">SKU: {item.sku} · Qty: {item.quantity}</p>
-                {item.attributes && Object.keys(item.attributes).length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {Object.entries(item.attributes).map(([key, value]) => <Badge key={key} variant="outline">{key}: {value}</Badge>)}
-                  </div>
-                )}
+                {item.attributes && Object.keys(item.attributes).length > 0 && <div className="mt-2 flex flex-wrap gap-2">{Object.entries(item.attributes).map(([key, value]) => <Badge key={key} variant="outline">{key}: {value}</Badge>)}</div>}
               </div>
               <p className="font-semibold">GH₵ {(item.totalPrice * item.quantity).toLocaleString()}</p>
             </div>
@@ -133,43 +125,36 @@ export default function AccountOrderDetailsPage() {
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Delivery timeline</CardTitle>
-          <p className="text-sm text-muted-foreground">Follow each fulfilment milestone in real time.</p>
-        </CardHeader>
+        <CardHeader><CardTitle>Delivery timeline</CardTitle><p className="text-sm text-muted-foreground">Follow each fulfilment milestone in real time.</p></CardHeader>
         <CardContent>
-          {order.status === "cancelled" ? (
-            <div className="rounded-lg bg-destructive/10 p-4 text-sm">{descriptions.cancelled}</div>
-          ) : (
-            <div className="relative space-y-0">
-              {steps.map((step, index) => {
-                const complete = currentIndex >= index;
-                const active = order.status === step;
-                const Icon = icons[step];
-                const event = history.find((item) => item.status === step);
-                const isLast = index === steps.length - 1;
-
-                return (
-                  <div key={step} className="relative flex gap-4 pb-6 last:pb-0">
-                    {!isLast && <div className={`absolute left-4 top-8 h-[calc(100%-8px)] w-px ${complete && currentIndex > index ? "bg-primary" : "bg-border"}`} />}
-                    <div className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${complete ? "border-primary bg-primary text-primary-foreground" : "border-border bg-muted text-muted-foreground"}`}>
-                      <Icon className="h-4 w-4" aria-hidden="true" />
-                    </div>
-                    <div className="min-w-0 flex-1 pt-0.5">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className={active ? "font-semibold" : complete ? "font-medium" : "text-muted-foreground"}>{labels[step]}</p>
-                        {active && <Badge variant="outline">Current</Badge>}
-                      </div>
-                      <p className="mt-1 text-sm text-muted-foreground">{descriptions[step]}</p>
-                      {event && <p className="mt-1 text-xs text-muted-foreground">{new Date(event.timestamp).toLocaleString("en-GH")}</p>}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          {order.status === "cancelled" ? <div className="rounded-lg bg-destructive/10 p-4 text-sm">{descriptions.cancelled}</div> : <div className="relative space-y-0">{steps.map((step, index) => {
+            const complete = currentIndex >= index;
+            const active = order.status === step;
+            const Icon = icons[step];
+            const event = history.find((item) => item.status === step);
+            const isLast = index === steps.length - 1;
+            return (
+              <div key={step} className="relative flex gap-4 pb-6 last:pb-0">
+                {!isLast && <div className={`absolute left-4 top-8 h-[calc(100%-8px)] w-px ${complete && currentIndex > index ? "bg-primary" : "bg-border"}`} />}
+                <div className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${complete ? "border-primary bg-primary text-primary-foreground" : "border-border bg-muted text-muted-foreground"}`}><Icon className="h-4 w-4" aria-hidden="true" /></div>
+                <div className="min-w-0 flex-1 pt-0.5"><div className="flex flex-wrap items-center gap-2"><p className={active ? "font-semibold" : complete ? "font-medium" : "text-muted-foreground"}>{labels[step]}</p>{active && <Badge variant="outline">Current</Badge>}</div><p className="mt-1 text-sm text-muted-foreground">{descriptions[step]}</p>{event && <p className="mt-1 text-xs text-muted-foreground">{new Date(event.timestamp).toLocaleString("en-GH")}</p>}</div>
+              </div>
+            );
+          })}</div>}
         </CardContent>
       </Card>
+
+      {order.shipment && (order.shipment.trackingNumber || order.shipment.carrier || order.shipment.estimatedDelivery) && (
+        <Card>
+          <CardHeader><CardTitle>Shipment tracking</CardTitle></CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            {order.shipment.carrier && <div><p className="text-xs uppercase tracking-wide text-muted-foreground">Carrier</p><p className="font-semibold">{order.shipment.carrier}</p></div>}
+            {order.shipment.trackingNumber && <div><p className="text-xs uppercase tracking-wide text-muted-foreground">Tracking number</p><p className="font-semibold break-all">{order.shipment.trackingNumber}</p></div>}
+            {order.shipment.estimatedDelivery && <div><p className="text-xs uppercase tracking-wide text-muted-foreground">Estimated delivery</p><p className="font-semibold">{new Date(order.shipment.estimatedDelivery).toLocaleDateString("en-GH", { dateStyle: "medium" })}</p></div>}
+            {order.shipment.trackingUrl && <div className="sm:col-span-2"><Button asChild variant="outline"><a href={order.shipment.trackingUrl} target="_blank" rel="noreferrer">Track shipment <ExternalLink className="ml-2 h-4 w-4" /></a></Button></div>}
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader><CardTitle>Delivery address</CardTitle></CardHeader>
