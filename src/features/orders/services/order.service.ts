@@ -1,3 +1,4 @@
+import type { PaymentStatus } from "@/features/payments/types/payment.types";
 import type {
   CreateOrderPayload,
   Order,
@@ -152,7 +153,7 @@ export const orderService = {
 
   dispatch(id: string, shipment: ShipmentTracking): Order | null {
     const order = this.getById(id);
-    if (!order || order.status !== "ready-for-dispatch") return null;
+    if (!order || order.status !== "ready-for-dispatch" || order.paymentStatus !== "successful") return null;
 
     const now = new Date().toISOString();
     const updated = this.updateStatus(id, "shipped", "Shipment dispatched");
@@ -162,6 +163,52 @@ export const orderService = {
       ...shipment,
       dispatchedAt: shipment.dispatchedAt ?? now,
     });
+  },
+
+  updatePaymentStatus(
+    id: string,
+    paymentStatus: PaymentStatus,
+    note?: string,
+  ): Order | null {
+    const orders = readOrders();
+    const index = orders.findIndex((order) => order.id === id);
+    if (index < 0) return null;
+
+    const current = orders[index];
+    const now = new Date().toISOString();
+    let updated: Order = { ...current, paymentStatus, updatedAt: now };
+
+    if (paymentStatus === "successful" && current.status === "pending") {
+      updated = {
+        ...updated,
+        status: "confirmed",
+        statusHistory: [
+          ...(current.statusHistory ?? [createStatusEvent("pending", current.createdAt, "Order placed")]),
+          createStatusEvent("confirmed", now, note ?? "Payment confirmed; order confirmed"),
+        ],
+      };
+    } else if (paymentStatus === "failed") {
+      updated = {
+        ...updated,
+        statusHistory: [
+          ...(current.statusHistory ?? [createStatusEvent(current.status, current.createdAt, "Order placed")]),
+          createStatusEvent(current.status, now, note ?? "Payment failed; order remains unpaid"),
+        ],
+      };
+    } else if (paymentStatus === "cancelled" && current.status === "pending") {
+      updated = {
+        ...updated,
+        status: "cancelled",
+        statusHistory: [
+          ...(current.statusHistory ?? [createStatusEvent("pending", current.createdAt, "Order placed")]),
+          createStatusEvent("cancelled", now, note ?? "Payment cancelled; order cancelled"),
+        ],
+      };
+    }
+
+    orders[index] = updated;
+    writeOrders(orders);
+    return updated;
   },
 
   cancel(id: string): Order | null {
