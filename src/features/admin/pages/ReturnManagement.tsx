@@ -1,14 +1,16 @@
 import { useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
-import { CheckCircle2, Clock3, PackageCheck, Search, XCircle } from "lucide-react";
+import { CheckCircle2, Clock3, PackageCheck, Search, Warehouse, XCircle } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import returnService from "@/features/returns/services/return.service";
 import {
+  RETURN_DISPOSITION_LABELS,
   RETURN_REASON_LABELS,
   RETURN_STATUS_LABELS,
+  type ReturnInventoryDisposition,
   type ReturnRequest,
   type ReturnStatus,
 } from "@/features/returns/types/return.types";
@@ -27,6 +29,8 @@ const ReturnManagement = () => {
   const [requests, setRequests] = useState<ReturnRequest[]>(() => returnService.list());
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<"all" | ReturnStatus>("all");
+  const [dispositions, setDispositions] = useState<Record<string, ReturnInventoryDisposition>>({});
+  const [reconciliationErrors, setReconciliationErrors] = useState<Record<string, string>>({});
 
   const filtered = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -45,6 +49,22 @@ const ReturnManagement = () => {
     if (updated) setRequests((current) => current.map((item) => item.id === id ? updated : item));
   };
 
+  const reconcile = (request: ReturnRequest) => {
+    try {
+      const disposition = dispositions[request.id] ?? "restock";
+      const updated = returnService.reconcileInventory(request.id, disposition);
+      if (updated) {
+        setRequests((current) => current.map((item) => item.id === request.id ? updated : item));
+        setReconciliationErrors((current) => ({ ...current, [request.id]: "" }));
+      }
+    } catch (error) {
+      setReconciliationErrors((current) => ({
+        ...current,
+        [request.id]: error instanceof Error ? error.message : "Inventory reconciliation failed.",
+      }));
+    }
+  };
+
   const counts = useMemo(() => requests.reduce<Record<string, number>>((acc, item) => {
     acc[item.status] = (acc[item.status] ?? 0) + 1;
     return acc;
@@ -58,7 +78,7 @@ const ReturnManagement = () => {
           <div>
             <p className="text-sm font-medium text-primary">Operations</p>
             <h1 className="text-3xl font-bold tracking-tight">Returns Management</h1>
-            <p className="mt-2 text-muted-foreground">Review, approve and progress customer return requests.</p>
+            <p className="mt-2 text-muted-foreground">Review returns, reconcile received goods and protect saleable inventory accuracy.</p>
           </div>
           <div className="grid grid-cols-3 gap-2 text-center text-sm">
             <Card><CardContent className="p-3"><div className="font-bold">{counts.requested ?? 0}</div><div className="text-muted-foreground">Pending</div></CardContent></Card>
@@ -106,12 +126,28 @@ const ReturnManagement = () => {
                       ))}
                     </div>
                   </div>
-                  <div className="min-w-52 space-y-3 rounded-lg bg-muted/40 p-4">
+                  <div className="min-w-60 space-y-3 rounded-lg bg-muted/40 p-4">
                     <div className="flex justify-between text-sm"><span className="text-muted-foreground">Refund estimate</span><strong>GH₵ {request.refundAmount.toLocaleString()}</strong></div>
                     <div className="flex flex-wrap gap-2">
                       {request.status === "requested" && <><Button size="sm" onClick={() => changeStatus(request.id, "approved")}><CheckCircle2 className="mr-1 h-4 w-4" />Approve</Button><Button size="sm" variant="destructive" onClick={() => changeStatus(request.id, "rejected")}><XCircle className="mr-1 h-4 w-4" />Reject</Button></>}
                       {request.status === "approved" && <Button size="sm" onClick={() => changeStatus(request.id, "item-received")}><PackageCheck className="mr-1 h-4 w-4" />Mark received</Button>}
-                      {request.status === "item-received" && <Button size="sm" onClick={() => changeStatus(request.id, "refund-pending")}><Clock3 className="mr-1 h-4 w-4" />Queue refund</Button>}
+                      {request.status === "item-received" && !request.inventoryReconciledAt && (
+                        <div className="w-full space-y-2">
+                          <label className="text-xs font-semibold text-foreground" htmlFor={`disposition-${request.id}`}>Inventory disposition</label>
+                          <select
+                            id={`disposition-${request.id}`}
+                            value={dispositions[request.id] ?? "restock"}
+                            onChange={(event) => setDispositions((current) => ({ ...current, [request.id]: event.target.value as ReturnInventoryDisposition }))}
+                            className="h-10 w-full rounded-md border bg-background px-3 text-xs"
+                          >
+                            {(Object.keys(RETURN_DISPOSITION_LABELS) as ReturnInventoryDisposition[]).map((key) => <option key={key} value={key}>{RETURN_DISPOSITION_LABELS[key]}</option>)}
+                          </select>
+                          <Button size="sm" className="w-full" onClick={() => reconcile(request)}><Warehouse className="mr-1 h-4 w-4" />Reconcile inventory</Button>
+                          {reconciliationErrors[request.id] && <p className="text-xs text-destructive" role="alert">{reconciliationErrors[request.id]}</p>}
+                        </div>
+                      )}
+                      {request.inventoryReconciledAt && <div className="w-full rounded-md border bg-background p-3 text-xs"><div className="font-semibold">Inventory reconciled</div><div className="mt-1 text-muted-foreground">{RETURN_DISPOSITION_LABELS[request.inventoryDisposition ?? "restock"]}</div><div className="mt-1 text-muted-foreground">{new Date(request.inventoryReconciledAt).toLocaleString()}</div></div>}
+                      {request.status === "item-received" && request.inventoryReconciledAt && <Button size="sm" onClick={() => changeStatus(request.id, "refund-pending")}><Clock3 className="mr-1 h-4 w-4" />Queue refund</Button>}
                       {request.status === "refund-pending" && <Button size="sm" onClick={() => changeStatus(request.id, "refunded")}><CheckCircle2 className="mr-1 h-4 w-4" />Mark refunded</Button>}
                     </div>
                   </div>
