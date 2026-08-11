@@ -8,9 +8,9 @@ export interface VariantOptionGroup {
 export type VariantSelection = Record<string, string>;
 
 /**
- * Builds stable option groups from the arbitrary attributes attached to variants.
- * This keeps the product model flexible for Size, Colour, Material, Capacity,
- * Shape, Design, Type, Dimensions, or seller-defined attributes.
+ * Builds stable option groups from arbitrary attributes attached to variants.
+ * This supports Size, Colour, Material, Capacity, Shape, Design, Type,
+ * Dimensions, or seller-defined attributes without changing the product model.
  */
 export function getVariantOptionGroups(
   variants: ProductVariant[] = [],
@@ -59,9 +59,10 @@ export function findVariantForSelection(
 }
 
 /**
- * Determines whether an option remains valid after the current selections.
- * A value is available when at least one variant matches all other selected
- * options and has positive stock.
+ * Determines whether an option remains selectable with the other selections.
+ * The option currently being evaluated is deliberately removed from the
+ * comparison so customers can switch between values without becoming trapped
+ * by an incompatible previous selection.
  */
 export function isVariantOptionAvailable(
   variants: ProductVariant[] = [],
@@ -69,15 +70,15 @@ export function isVariantOptionAvailable(
   optionName: string,
   optionValue: string,
 ): boolean {
-  const candidateSelection = {
-    ...selection,
-    [optionName]: optionValue,
-  };
-
-  return variants.some(
-    (variant) =>
-      variant.stock > 0 && matchesVariantSelection(variant, candidateSelection),
+  const otherSelections = Object.fromEntries(
+    Object.entries(selection).filter(([name]) => name !== optionName),
   );
+
+  return variants.some((variant) => {
+    if (variant.stock <= 0) return false;
+    if (variant.attributes?.[optionName] !== optionValue) return false;
+    return matchesVariantSelection(variant, otherSelections);
+  });
 }
 
 export function getAvailableValues(
