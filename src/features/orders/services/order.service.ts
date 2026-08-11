@@ -1,4 +1,9 @@
-import type { CreateOrderPayload, Order, OrderStatus } from "../types/order.types";
+import type {
+  CreateOrderPayload,
+  Order,
+  OrderStatus,
+  OrderStatusEvent,
+} from "../types/order.types";
 
 const STORAGE_KEY = "bredabuy:orders";
 
@@ -28,12 +33,23 @@ const writeOrders = (orders: Order[]) => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
   } catch {
-    // Persistence is optional until the production API is connected.
+    // Persistence remains optional until the production API is connected.
   }
 };
 
 const makeOrderNumber = () =>
   `BB-${new Date().getFullYear()}-${Date.now().toString(36).toUpperCase()}`;
+
+const createStatusEvent = (
+  status: OrderStatus,
+  timestamp: string,
+  note?: string,
+): OrderStatusEvent => ({
+  id: crypto.randomUUID(),
+  status,
+  timestamp,
+  ...(note ? { note } : {}),
+});
 
 export const orderService = {
   create(payload: CreateOrderPayload): Order {
@@ -43,6 +59,7 @@ export const orderService = {
       orderNumber: makeOrderNumber(),
       ...payload,
       status: "pending",
+      statusHistory: [createStatusEvent("pending", now, "Order placed")],
       paymentStatus: "pending",
       currency: "GHS",
       createdAt: now,
@@ -77,7 +94,7 @@ export const orderService = {
     return STATUS_TRANSITIONS[status];
   },
 
-  updateStatus(id: string, status: OrderStatus): Order | null {
+  updateStatus(id: string, status: OrderStatus, note?: string): Order | null {
     const orders = readOrders();
     const index = orders.findIndex((order) => order.id === id);
     if (index < 0) return null;
@@ -85,7 +102,18 @@ export const orderService = {
     const current = orders[index];
     if (!this.canTransition(current.status, status)) return null;
 
-    const updated = { ...current, status, updatedAt: new Date().toISOString() };
+    const now = new Date().toISOString();
+    const history = current.statusHistory?.length
+      ? current.statusHistory
+      : [createStatusEvent(current.status, current.createdAt, "Order placed")];
+
+    const updated: Order = {
+      ...current,
+      status,
+      statusHistory: [...history, createStatusEvent(status, now, note)],
+      updatedAt: now,
+    };
+
     orders[index] = updated;
     writeOrders(orders);
     return updated;
@@ -94,7 +122,7 @@ export const orderService = {
   cancel(id: string): Order | null {
     const order = this.getById(id);
     if (!order || !this.canTransition(order.status, "cancelled")) return null;
-    return this.updateStatus(id, "cancelled");
+    return this.updateStatus(id, "cancelled", "Order cancelled");
   },
 };
 
