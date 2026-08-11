@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { VAT_RATE } from "@/data/mockData";
 
 const Cart: React.FC = () => {
-  const { items, removeFromCart, updateQuantity, subtotal, clearCart } = useCart();
+  const { items, removeFromCart, updateQuantity, subtotal, clearCart, totalItems } = useCart();
 
   const vat = subtotal * VAT_RATE;
   const total = subtotal + vat;
@@ -29,20 +29,20 @@ const Cart: React.FC = () => {
         </Helmet>
         <Layout>
           <div className="container mx-auto px-4 py-16">
-            <div className="max-w-md mx-auto text-center">
-              <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
-                <ShoppingBag className="w-12 h-12 text-muted-foreground" />
+            <div className="mx-auto max-w-md text-center">
+              <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-muted">
+                <ShoppingBag className="h-12 w-12 text-muted-foreground" />
               </div>
-              <h1 className="text-2xl font-display font-bold text-foreground mb-2">
+              <h1 className="mb-2 text-2xl font-display font-bold text-foreground">
                 Your cart is empty
               </h1>
-              <p className="text-muted-foreground mb-8">
-                Looks like you haven't added anything to your cart yet.
+              <p className="mb-8 text-muted-foreground">
+                Looks like you haven&apos;t added anything to your cart yet.
               </p>
               <Link to="/products">
                 <Button variant="hero">
                   Start Shopping
-                  <ArrowRight className="w-5 h-5 ml-2" />
+                  <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
             </div>
@@ -55,102 +55,123 @@ const Cart: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>{`Shopping Cart (${items.length}) - BredaBuy`}</title>
+        <title>{`Shopping Cart (${totalItems}) - BredaBuy`}</title>
       </Helmet>
       <Layout>
         <div className="container mx-auto px-4 py-8 md:py-12">
-          <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-8">
+          <h1 className="mb-8 text-3xl font-display font-bold text-foreground md:text-4xl">
             Shopping Cart
           </h1>
 
-          <div className="grid lg:grid-cols-3 gap-8">
-            {/* Cart Items */}
-            <div className="lg:col-span-2 space-y-4">
-              {items.map((item) => (
-                <div
-                  key={item.product.id}
-                  className="flex gap-4 bg-card border border-border rounded-2xl p-4 animate-fade-in"
-                >
-                  <Link
-                    to={`/product/${item.product.id}`}
-                    className="w-24 h-24 md:w-32 md:h-32 flex-shrink-0 rounded-xl overflow-hidden"
+          <div className="grid gap-8 lg:grid-cols-3">
+            <div className="space-y-4 lg:col-span-2">
+              {items.map((item) => {
+                const itemKey = `${item.product.id}:${item.variantId ?? "base"}`;
+                const attributeSummary = item.attributes
+                  ? Object.entries(item.attributes)
+                      .map(([name, value]) => `${name}: ${value}`)
+                      .join(" • ")
+                  : "";
+
+                return (
+                  <div
+                    key={itemKey}
+                    className="flex gap-4 rounded-2xl border border-border bg-card p-4 animate-fade-in"
                   >
-                    <img
-                      src={item.product.image}
-                      alt={item.product.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </Link>
-
-                  <div className="flex-1 min-w-0">
-                    <Link to={`/product/${item.product.id}`}>
-                      <h3 className="font-semibold text-foreground hover:text-primary transition-colors line-clamp-2">
-                        {item.product.name}
-                      </h3>
+                    <Link
+                      to={`/product/${item.product.id}`}
+                      className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-xl md:h-32 md:w-32"
+                    >
+                      <img
+                        src={item.product.image}
+                        alt={item.product.name}
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                        decoding="async"
+                      />
                     </Link>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {item.product.brand}
-                    </p>
-                    <p className="text-lg font-bold text-foreground mt-2">
-                      {formatPrice(item.product.price)}
-                    </p>
 
-                    <div className="flex items-center justify-between mt-4">
-                      <div className="flex items-center border border-border rounded-lg">
+                    <div className="min-w-0 flex-1">
+                      <Link to={`/product/${item.product.id}`}>
+                        <h3 className="line-clamp-2 font-semibold text-foreground transition-colors hover:text-primary">
+                          {item.product.name}
+                        </h3>
+                      </Link>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {item.product.brand}
+                      </p>
+                      {attributeSummary && (
+                        <p className="mt-2 rounded-md bg-muted/50 px-2 py-1 text-xs text-muted-foreground">
+                          {attributeSummary}
+                        </p>
+                      )}
+                      <p className="mt-2 text-lg font-bold text-foreground">
+                        {formatPrice(item.unitPrice)}
+                      </p>
+                      {item.sku && (
+                        <p className="mt-1 text-xs text-muted-foreground">SKU: {item.sku}</p>
+                      )}
+
+                      <div className="mt-4 flex items-center justify-between gap-3">
+                        <div className="flex items-center rounded-lg border border-border">
+                          <button
+                            type="button"
+                            disabled={item.quantity <= 1}
+                            onClick={() =>
+                              updateQuantity(item.product.id, item.quantity - 1, item.variantId)
+                            }
+                            className="flex h-8 w-8 items-center justify-center hover:bg-muted disabled:opacity-40"
+                            aria-label="Decrease quantity"
+                          >
+                            <Minus className="h-4 w-4" />
+                          </button>
+                          <span className="w-10 text-center font-medium">{item.quantity}</span>
+                          <button
+                            type="button"
+                            disabled={item.quantity >= item.availableStock}
+                            onClick={() =>
+                              updateQuantity(item.product.id, item.quantity + 1, item.variantId)
+                            }
+                            className="flex h-8 w-8 items-center justify-center hover:bg-muted disabled:opacity-40"
+                            aria-label="Increase quantity"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </button>
+                        </div>
+
                         <button
-                          onClick={() =>
-                            updateQuantity(item.product.id, item.quantity - 1)
-                          }
-                          className="w-8 h-8 flex items-center justify-center hover:bg-muted transition-colors"
+                          type="button"
+                          onClick={() => removeFromCart(item.product.id, item.variantId)}
+                          className="rounded-lg p-2 text-destructive transition-colors hover:bg-destructive/10"
+                          aria-label={`Remove ${item.product.name} from cart`}
                         >
-                          <Minus className="w-4 h-4" />
-                        </button>
-                        <span className="w-10 text-center font-medium">
-                          {item.quantity}
-                        </span>
-                        <button
-                          onClick={() =>
-                            updateQuantity(item.product.id, item.quantity + 1)
-                          }
-                          className="w-8 h-8 flex items-center justify-center hover:bg-muted transition-colors"
-                        >
-                          <Plus className="w-4 h-4" />
+                          <Trash2 className="h-5 w-5" />
                         </button>
                       </div>
-
-                      <button
-                        onClick={() => removeFromCart(item.product.id)}
-                        className="text-destructive hover:bg-destructive/10 p-2 rounded-lg transition-colors"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
               <Button
                 variant="outline"
                 onClick={clearCart}
-                className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
+                className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
               >
-                <Trash2 className="w-4 h-4 mr-2" />
+                <Trash2 className="mr-2 h-4 w-4" />
                 Clear Cart
               </Button>
             </div>
 
-            {/* Order Summary */}
             <div className="lg:col-span-1">
-              <div className="bg-card border border-border rounded-2xl p-6 sticky top-24">
-                <h2 className="text-xl font-display font-bold text-foreground mb-6">
+              <div className="sticky top-24 rounded-2xl border border-border bg-card p-6">
+                <h2 className="mb-6 text-xl font-display font-bold text-foreground">
                   Order Summary
                 </h2>
 
-                <div className="space-y-4 mb-6">
+                <div className="mb-6 space-y-4">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      Subtotal ({items.length} items)
-                    </span>
+                    <span className="text-muted-foreground">Subtotal ({totalItems} items)</span>
                     <span className="font-medium">{formatPrice(subtotal)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
@@ -171,7 +192,7 @@ const Cart: React.FC = () => {
                 </div>
 
                 {subtotal < 500 && (
-                  <p className="text-sm text-muted-foreground mb-4 bg-muted/50 p-3 rounded-lg">
+                  <p className="mb-4 rounded-lg bg-muted/50 p-3 text-sm text-muted-foreground">
                     Add {formatPrice(500 - subtotal)} more for free shipping!
                   </p>
                 )}
@@ -179,27 +200,21 @@ const Cart: React.FC = () => {
                 <Link to="/checkout">
                   <Button variant="hero" className="w-full">
                     Proceed to Checkout
-                    <ArrowRight className="w-5 h-5 ml-2" />
+                    <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
 
-                <Link to="/products" className="block mt-4">
+                <Link to="/products" className="mt-4 block">
                   <Button variant="outline" className="w-full">
                     Continue Shopping
                   </Button>
                 </Link>
 
-                {/* Payment Methods */}
-                <div className="mt-6 pt-6 border-t border-border">
-                  <p className="text-sm text-muted-foreground mb-3">
-                    We accept:
-                  </p>
-                  <div className="flex gap-2">
+                <div className="mt-6 border-t border-border pt-6">
+                  <p className="mb-3 text-sm text-muted-foreground">We accept:</p>
+                  <div className="flex flex-wrap gap-2">
                     {["Mobile Money", "Bank Transfer", "COD"].map((method) => (
-                      <span
-                        key={method}
-                        className="px-3 py-1 bg-muted text-xs font-medium rounded-full"
-                      >
+                      <span key={method} className="rounded-full bg-muted px-3 py-1 text-xs font-medium">
                         {method}
                       </span>
                     ))}
