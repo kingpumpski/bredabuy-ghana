@@ -67,6 +67,7 @@ const sellerRoutes: RouteObject[] = [
   { path: "/seller/products", ...lazy(() => import("@/features/sellers/pages/SellerProducts")) },
   { path: "/seller/products/new", ...lazy(() => import("@/features/sellers/pages/CreateProduct")) },
   { path: "/seller/orders", ...lazy(() => import("@/features/sellers/pages/SellerOrders")) },
+  { path: "/seller/returns", ...lazy(() => import("@/features/sellers/pages/SellerReturns")) },
   { path: "/seller/inventory", ...lazy(() => import("@/features/sellers/pages/SellerInventory")) },
   { path: "/seller/customers", ...lazy(() => import("@/features/sellers/pages/SellerCustomers")) },
   { path: "/seller/analytics", ...lazy(() => import("@/features/sellers/pages/SellerAnalytics")) },
