@@ -3,6 +3,7 @@ import type {
   Order,
   OrderStatus,
   OrderStatusEvent,
+  ShipmentTracking,
 } from "../types/order.types";
 
 const STORAGE_KEY = "bredabuy:orders";
@@ -114,6 +115,36 @@ export const orderService = {
       updatedAt: now,
     };
 
+    if (status === "shipped") {
+      updated.shipment = {
+        ...current.shipment,
+        dispatchedAt: current.shipment?.dispatchedAt ?? now,
+      };
+    }
+    if (status === "delivered") {
+      updated.shipment = {
+        ...current.shipment,
+        deliveredAt: current.shipment?.deliveredAt ?? now,
+      };
+    }
+
+    orders[index] = updated;
+    writeOrders(orders);
+    return updated;
+  },
+
+  updateShipment(id: string, shipment: ShipmentTracking): Order | null {
+    const orders = readOrders();
+    const index = orders.findIndex((order) => order.id === id);
+    if (index < 0) return null;
+
+    const current = orders[index];
+    const now = new Date().toISOString();
+    const updated: Order = {
+      ...current,
+      shipment: { ...current.shipment, ...shipment },
+      updatedAt: now,
+    };
     orders[index] = updated;
     writeOrders(orders);
     return updated;
