@@ -23,6 +23,15 @@ export interface OrderStatusEvent {
   note?: string;
 }
 
+export interface ShipmentTracking {
+  carrier?: string;
+  trackingNumber?: string;
+  trackingUrl?: string;
+  dispatchedAt?: string;
+  estimatedDelivery?: string;
+  deliveredAt?: string;
+}
+
 export interface OrderItem {
   id: string;
   productId: string;
@@ -55,6 +64,7 @@ export interface Order {
   paymentStatus: PaymentStatus;
   shippingAddress: ShippingAddress;
   shippingMethod?: ShippingMethod;
+  shipment?: ShipmentTracking;
   createdAt: string;
   updatedAt: string;
 }
