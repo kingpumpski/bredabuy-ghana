@@ -4,6 +4,7 @@ import type { CreateOrderPayload } from "@/features/orders/types/order.types";
 import type { ShippingAddress } from "@/features/shipping/types/shipping.types";
 import inventoryService from "@/features/inventory/services/inventory.service";
 import orderService from "@/features/orders/services/order.service";
+import sellerOrderService from "@/features/orders/services/seller-order.service";
 
 export interface CheckoutPayload {
   customerId: string;
@@ -16,6 +17,7 @@ export interface CheckoutPayload {
 export interface CheckoutResult {
   order: ReturnType<typeof orderService.create>;
   reservationId: string;
+  sellerOrders: ReturnType<typeof sellerOrderService.createFromOrder>;
 }
 
 export const checkoutService = {
@@ -43,7 +45,8 @@ export const checkoutService = {
         })),
       );
 
-      return { order, reservationId: reservation.id };
+      const sellerOrders = sellerOrderService.createFromOrder(order);
+      return { order, reservationId: reservation.id, sellerOrders };
     } catch (error) {
       orderService.cancel(order.id);
       throw error;
