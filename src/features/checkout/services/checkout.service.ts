@@ -15,37 +15,37 @@ export interface CheckoutPayload {
 
 export interface CheckoutResult {
   order: ReturnType<typeof orderService.create>;
-  reservationId?: string;
+  reservationId: string;
 }
 
 export const checkoutService = {
   submit(payload: CheckoutPayload): CheckoutResult {
-    const reservation = inventoryService.reserve(
-      crypto.randomUUID(),
-      payload.items.map((item) => ({
-        productId: item.productId,
-        variantId: item.variantId,
-        sku: item.sku,
-        quantity: item.quantity,
-      })),
-    );
+    const order = orderService.create({
+      customerId: payload.customerId,
+      items: payload.items,
+      subtotal: payload.totals.subtotal,
+      discount: payload.totals.discount,
+      shipping: payload.totals.shipping,
+      tax: payload.totals.tax,
+      total: payload.totals.total,
+      paymentMethod: payload.paymentMethod,
+      shippingAddress: payload.shippingAddress,
+    });
 
     try {
-      const order = orderService.create({
-        customerId: payload.customerId,
-        items: payload.items,
-        subtotal: payload.totals.subtotal,
-        discount: payload.totals.discount,
-        shipping: payload.totals.shipping,
-        tax: payload.totals.tax,
-        total: payload.totals.total,
-        paymentMethod: payload.paymentMethod,
-        shippingAddress: payload.shippingAddress,
-      });
+      const reservation = inventoryService.reserve(
+        order.id,
+        payload.items.map((item) => ({
+          productId: item.productId,
+          variantId: item.variantId,
+          sku: item.sku,
+          quantity: item.quantity,
+        })),
+      );
 
       return { order, reservationId: reservation.id };
     } catch (error) {
-      inventoryService.release(reservation.id);
+      orderService.cancel(order.id);
       throw error;
     }
   },
