@@ -1,21 +1,25 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { CheckCircle2, Package, Mail, ArrowRight } from "lucide-react";
+import { CheckCircle2, Package, ArrowRight, ClipboardList } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 
+type OrderSuccessState = {
+  orderId?: string;
+  orderNumber?: string;
+  total?: number;
+};
+
 const OrderSuccess: React.FC = () => {
   const location = useLocation();
-  const { transactionId, trackingNumber, total } = location.state || {};
+  const state = (location.state ?? {}) as OrderSuccessState;
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("en-GH", {
-      style: "currency",
-      currency: "GHS",
-      minimumFractionDigits: 2,
-    }).format(price);
-  };
+  const formatPrice = (price: number) => new Intl.NumberFormat("en-GH", {
+    style: "currency",
+    currency: "GHS",
+    minimumFractionDigits: 2,
+  }).format(price);
 
   return (
     <>
@@ -24,80 +28,68 @@ const OrderSuccess: React.FC = () => {
       </Helmet>
       <Layout>
         <div className="container mx-auto px-4 py-16 md:py-24">
-          <div className="max-w-lg mx-auto text-center">
-            {/* Success Icon */}
-            <div className="w-24 h-24 bg-secondary/10 rounded-full flex items-center justify-center mx-auto mb-8 animate-scale-in">
-              <CheckCircle2 className="w-14 h-14 text-secondary" />
+          <div className="mx-auto max-w-lg text-center">
+            <div className="mx-auto mb-8 flex h-24 w-24 items-center justify-center rounded-full bg-secondary/10 animate-scale-in">
+              <CheckCircle2 className="h-14 w-14 text-secondary" />
             </div>
 
-            <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4 animate-slide-up">
+            <h1 className="mb-4 text-3xl font-display font-bold text-foreground md:text-4xl animate-slide-up">
               Order Confirmed!
             </h1>
-            <p className="text-lg text-muted-foreground mb-8 animate-slide-up stagger-1">
+            <p className="mb-8 text-lg text-muted-foreground animate-slide-up">
               Thank you for shopping with BredaBuy. Your order has been placed successfully.
             </p>
 
-            {/* Order Details */}
-            <div className="bg-card border border-border rounded-2xl p-6 mb-8 text-left animate-slide-up stagger-2">
+            <div className="mb-8 rounded-2xl border border-border bg-card p-6 text-left shadow-sm animate-slide-up">
               <div className="space-y-4">
-                <div className="flex justify-between items-center pb-4 border-b border-border">
-                  <span className="text-muted-foreground">Transaction ID</span>
-                  <span className="font-mono font-semibold text-sm">
-                    {transactionId || "TXN-DEMO-12345"}
-                  </span>
+                <div className="flex items-center justify-between gap-4 border-b border-border pb-4">
+                  <span className="text-muted-foreground">Order Number</span>
+                  <span className="font-mono text-sm font-semibold">{state.orderNumber ?? "Pending"}</span>
                 </div>
-                <div className="flex justify-between items-center pb-4 border-b border-border">
-                  <span className="text-muted-foreground">Tracking Number</span>
-                  <span className="font-mono font-semibold text-sm text-primary">
-                    {trackingNumber || "TRK-DEMO-67890"}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Total Paid</span>
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-muted-foreground">Order Total</span>
                   <span className="text-xl font-bold text-foreground">
-                    {total ? formatPrice(total) : formatPrice(0)}
+                    {typeof state.total === "number" ? formatPrice(state.total) : "—"}
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Next Steps */}
-            <div className="space-y-4 mb-8 animate-slide-up stagger-3">
-              <div className="flex items-center gap-4 bg-muted/50 rounded-xl p-4">
-                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                  <Mail className="w-6 h-6 text-primary" />
+            <div className="mb-8 space-y-4 animate-slide-up">
+              <div className="flex items-center gap-4 rounded-xl bg-muted/50 p-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                  <ClipboardList className="h-6 w-6 text-primary" />
                 </div>
                 <div className="text-left">
-                  <p className="font-semibold">Confirmation Email Sent</p>
+                  <p className="font-semibold">Order saved</p>
                   <p className="text-sm text-muted-foreground">
-                    Check your inbox for order details
+                    Your order is now available in your account order history.
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-4 bg-muted/50 rounded-xl p-4">
-                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                  <Package className="w-6 h-6 text-primary" />
+              <div className="flex items-center gap-4 rounded-xl bg-muted/50 p-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                  <Package className="h-6 w-6 text-primary" />
                 </div>
                 <div className="text-left">
-                  <p className="font-semibold">Track Your Order</p>
+                  <p className="font-semibold">Delivery tracking</p>
                   <p className="text-sm text-muted-foreground">
-                    Use your tracking number to monitor delivery
+                    Tracking will become available when the order is dispatched.
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Actions */}
-            <div className="flex flex-col sm:flex-row gap-4 animate-slide-up stagger-4">
+            <div className="flex flex-col gap-4 sm:flex-row animate-slide-up">
               <Link to="/products" className="flex-1">
                 <Button variant="hero" className="w-full">
                   Continue Shopping
-                  <ArrowRight className="w-5 h-5 ml-2" />
+                  <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
-              <Link to="/track-order" className="flex-1">
+              <Link to="/account/orders" className="flex-1">
                 <Button variant="outline" className="w-full">
-                  Track Order
+                  View My Orders
                 </Button>
               </Link>
             </div>
