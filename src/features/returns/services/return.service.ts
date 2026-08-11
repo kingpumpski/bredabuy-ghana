@@ -1,4 +1,5 @@
-import type { CreateReturnPayload, ReturnRequest, ReturnStatus } from "../types/return.types";
+import inventoryService from "@/features/inventory/services/inventory.service";
+import type { CreateReturnPayload, ReturnInventoryDisposition, ReturnRequest, ReturnStatus } from "../types/return.types";
 
 const STORAGE_KEY = "bredabuy:returns";
 
@@ -15,7 +16,7 @@ const write = (requests: ReturnRequest[]) => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(requests));
   } catch {
-    // Persistence becomes API-backed when the production backend is connected.
+    // Production persistence becomes API-backed when the backend is connected.
   }
 };
 
@@ -50,6 +51,44 @@ export const returnService = {
       return updated;
     });
     if (updated) write(requests);
+    return updated;
+  },
+
+  reconcileInventory(
+    id: string,
+    disposition: ReturnInventoryDisposition,
+    note?: string,
+  ): ReturnRequest | null {
+    const request = this.getById(id);
+    if (!request) throw new Error("Return request not found.");
+    if (request.status !== "item-received") {
+      throw new Error("Only received returns can be reconciled into inventory.");
+    }
+    if (request.inventoryReconciledAt) {
+      throw new Error("This return has already been reconciled into inventory.");
+    }
+
+    inventoryService.reconcileReturn(
+      request.id,
+      request.orderId,
+      request.items.map((item) => ({
+        productId: item.productId,
+        variantId: item.variantId,
+        sku: item.sku,
+        quantity: item.quantity,
+        disposition,
+      })),
+      note,
+    );
+
+    const now = new Date().toISOString();
+    const updated = {
+      ...request,
+      inventoryDisposition: disposition,
+      inventoryReconciledAt: now,
+      updatedAt: now,
+    };
+    write(read().map((item) => item.id === id ? updated : item));
     return updated;
   },
 };
