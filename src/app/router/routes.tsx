@@ -37,20 +37,7 @@ import VerifyEmail from "@/features/auth/pages/VerifyEmail";
 import VerifyOtp from "@/features/auth/pages/VerifyOtp";
 import MfaPage from "@/features/auth/pages/MfaPage";
 
-// import CustomerDashboard from "@/features/customers/pages/CustomerDashboard";
-// import ProfilePage from "@/features/customers/pages/ProfilePage";
-// import OrdersPage from "@/features/customers/pages/OrdersPage";
-// import OrderDetails from "@/features/customers/pages/OrderDetails";
-// import WishlistPage from "@/features/customers/pages/WishlistPage";
-// import AddressBook from "@/features/customers/pages/AddressBook";
-// import NotificationCenter from "@/features/customers/pages/NotificationCenter";
-// import WalletPage from "@/features/customers/pages/WalletPage";
-// import ReviewManagement from "@/features/customers/pages/ReviewManagement";
-// import SupportPage from "@/features/customers/pages/SupportPage";
-// import AccountSecurityPage from "@/features/account/pages/AccountSecurityPage";
-
 import {
-  AccountShell,
   AccountDashboardPage,
   AccountProfilePage,
   AccountOrdersPage,
@@ -97,70 +84,22 @@ const router = createBrowserRouter([
     path: "/",
     element: <MainLayout />,
     children: [
-      {
-        index: true,
-        element: <Home />,
-      },
-      {
-        path: "shop",
-        element: <ProductCataloguePage />,
-      },
-      {
-        path: "products",
-        element: <ProductCataloguePage />,
-      },
-      {
-        path: "products/:id",
-        element: <ProductDetailsPage />,
-      },
-      {
-        path: "product/:id",
-        element: <ProductDetailsPage />,
-      },
-      {
-        path: "search",
-        element: <ProductCataloguePage />,
-      },
-      {
-        path: "categories",
-        element: <Categories />,
-      },
-      {
-        path: "brands",
-        element: <Brands />,
-      },
-      {
-        path: "deals",
-        element: <Deals />,
-      },
-      {
-        path: "flash-sales",
-        element: <FlashSales />,
-      },
-      {
-        path: "cart",
-        element: <Cart />,
-      },
-      {
-        path: "checkout",
-        element: <Checkout />,
-      },
-      {
-        path: "order-success",
-        element: <OrderSuccess />,
-      },
-      {
-        path: "about",
-        element: <About />,
-      },
-      {
-        path: "contact",
-        element: <Contact />,
-      },
-      {
-        path: "unauthorized",
-        element: <Unauthorized />,
-      },
+      { index: true, element: <Home /> },
+      { path: "shop", element: <ProductCataloguePage /> },
+      { path: "products", element: <ProductCataloguePage /> },
+      { path: "products/:id", element: <ProductDetailsPage /> },
+      { path: "product/:id", element: <ProductDetailsPage /> },
+      { path: "search", element: <ProductCataloguePage /> },
+      { path: "categories", element: <Categories /> },
+      { path: "brands", element: <Brands /> },
+      { path: "deals", element: <Deals /> },
+      { path: "flash-sales", element: <FlashSales /> },
+      { path: "cart", element: <Cart /> },
+      { path: "checkout", element: <Checkout /> },
+      { path: "order-success", element: <OrderSuccess /> },
+      { path: "about", element: <About /> },
+      { path: "contact", element: <Contact /> },
+      { path: "unauthorized", element: <Unauthorized /> },
     ],
   },
 
@@ -170,36 +109,15 @@ const router = createBrowserRouter([
       {
         element: <PublicRoute />,
         children: [
-          {
-            path: "/auth/login",
-            element: <LoginPage />,
-          },
-          {
-            path: "/auth/register",
-            element: <RegisterPage />,
-          },
-          {
-            path: "/auth/forgot-password",
-            element: <ForgotPassword />,
-          },
+          { path: "/auth/login", element: <LoginPage /> },
+          { path: "/auth/register", element: <RegisterPage /> },
+          { path: "/auth/forgot-password", element: <ForgotPassword /> },
         ],
       },
-      {
-        path: "/auth/reset-password",
-        element: <ResetPassword />,
-      },
-      {
-        path: "/auth/verify-email",
-        element: <VerifyEmail />,
-      },
-      {
-        path: "/auth/verify-otp",
-        element: <VerifyOtp />,
-      },
-      {
-        path: "/auth/mfa",
-        element: <MfaPage />,
-      },
+      { path: "/auth/reset-password", element: <ResetPassword /> },
+      { path: "/auth/verify-email", element: <VerifyEmail /> },
+      { path: "/auth/verify-otp", element: <VerifyOtp /> },
+      { path: "/auth/mfa", element: <MfaPage /> },
     ],
   },
 
@@ -209,50 +127,17 @@ const router = createBrowserRouter([
       {
         element: <DashboardLayout />,
         children: [
-          {
-            path: "/account",
-            element: <CustomerDashboard />,
-          },
-          {
-            path: "/account/profile",
-            element: <ProfilePage />,
-          },
-          {
-            path: "/account/orders",
-            element: <OrdersPage />,
-          },
-          {
-            path: "/account/orders/:id",
-            element: <OrderDetails />,
-          },
-          {
-            path: "/account/wishlist",
-            element: <WishlistPage />,
-          },
-          {
-            path: "/account/addresses",
-            element: <AddressBook />,
-          },
-          {
-            path: "/account/notifications",
-            element: <NotificationCenter />,
-          },
-          {
-            path: "/account/wallet",
-            element: <WalletPage />,
-          },
-          {
-            path: "/account/reviews",
-            element: <ReviewManagement />,
-          },
-          {
-            path: "/account/support",
-            element: <SupportPage />,
-          },
-          {
-            path: "/account/security",
-            element: <AccountSecurityPage />,
-          },
+          { path: "/account", element: <AccountDashboardPage /> },
+          { path: "/account/profile", element: <AccountProfilePage /> },
+          { path: "/account/orders", element: <AccountOrdersPage /> },
+          { path: "/account/orders/:id", element: <AccountOrderDetailsPage /> },
+          { path: "/account/wishlist", element: <AccountWishlistPage /> },
+          { path: "/account/addresses", element: <AccountAddressesPage /> },
+          { path: "/account/notifications", element: <AccountNotificationsPage /> },
+          { path: "/account/wallet", element: <AccountWalletPage /> },
+          { path: "/account/reviews", element: <AccountReviewsPage /> },
+          { path: "/account/support", element: <AccountSupportPage /> },
+          { path: "/account/security", element: <AccountSecurityPage /> },
         ],
       },
     ],
@@ -264,54 +149,18 @@ const router = createBrowserRouter([
       {
         element: <SellerLayout />,
         children: [
-          {
-            path: "/seller",
-            element: <SellerDashboard />,
-          },
-          {
-            path: "/seller/products",
-            element: <SellerProducts />,
-          },
-          {
-            path: "/seller/products/new",
-            element: <CreateProduct />,
-          },
-          {
-            path: "/seller/orders",
-            element: <SellerOrders />,
-          },
-          {
-            path: "/seller/inventory",
-            element: <SellerInventory />,
-          },
-          {
-            path: "/seller/customers",
-            element: <SellerCustomers />,
-          },
-          {
-            path: "/seller/analytics",
-            element: <SellerAnalytics />,
-          },
-          {
-            path: "/seller/payouts",
-            element: <SellerPayouts />,
-          },
-          {
-            path: "/seller/promotions",
-            element: <SellerPromotions />,
-          },
-          {
-            path: "/seller/coupons",
-            element: <SellerCoupons />,
-          },
-          {
-            path: "/seller/reviews",
-            element: <SellerReviews />,
-          },
-          {
-            path: "/seller/settings",
-            element: <SellerSettings />,
-          },
+          { path: "/seller", element: <SellerDashboard /> },
+          { path: "/seller/products", element: <SellerProducts /> },
+          { path: "/seller/products/new", element: <CreateProduct /> },
+          { path: "/seller/orders", element: <SellerOrders /> },
+          { path: "/seller/inventory", element: <SellerInventory /> },
+          { path: "/seller/customers", element: <SellerCustomers /> },
+          { path: "/seller/analytics", element: <SellerAnalytics /> },
+          { path: "/seller/payouts", element: <SellerPayouts /> },
+          { path: "/seller/promotions", element: <SellerPromotions /> },
+          { path: "/seller/coupons", element: <SellerCoupons /> },
+          { path: "/seller/reviews", element: <SellerReviews /> },
+          { path: "/seller/settings", element: <SellerSettings /> },
         ],
       },
     ],
@@ -323,76 +172,27 @@ const router = createBrowserRouter([
       {
         element: <AdminLayout />,
         children: [
-          {
-            path: "/admin",
-            element: <AdminDashboard />,
-          },
-          {
-            path: "/admin/products",
-            element: <ProductManagement />,
-          },
-          {
-            path: "/admin/categories",
-            element: <CategoryManagement />,
-          },
-          {
-            path: "/admin/customers",
-            element: <CustomerManagement />,
-          },
-          {
-            path: "/admin/inventory",
-            element: <InventoryManagement />,
-          },
-          {
-            path: "/admin/orders",
-            element: <OrderManagement />,
-          },
-          {
-            path: "/admin/sellers",
-            element: <SellerManagement />,
-          },
-          {
-            path: "/admin/warehouses",
-            element: <WarehouseManagement />,
-          },
-          {
-            path: "/admin/logistics",
-            element: <LogisticsManagement />,
-          },
-          {
-            path: "/admin/payments",
-            element: <PaymentManagement />,
-          },
-          {
-            path: "/admin/marketing",
-            element: <MarketingManagement />,
-          },
-          {
-            path: "/admin/cms",
-            element: <CMSManagement />,
-          },
-          {
-            path: "/admin/reports",
-            element: <Reports />,
-          },
-          {
-            path: "/admin/settings",
-            element: <SystemSettings />,
-          },
+          { path: "/admin", element: <AdminDashboard /> },
+          { path: "/admin/products", element: <ProductManagement /> },
+          { path: "/admin/categories", element: <CategoryManagement /> },
+          { path: "/admin/customers", element: <CustomerManagement /> },
+          { path: "/admin/inventory", element: <InventoryManagement /> },
+          { path: "/admin/orders", element: <OrderManagement /> },
+          { path: "/admin/sellers", element: <SellerManagement /> },
+          { path: "/admin/warehouses", element: <WarehouseManagement /> },
+          { path: "/admin/logistics", element: <LogisticsManagement /> },
+          { path: "/admin/payments", element: <PaymentManagement /> },
+          { path: "/admin/marketing", element: <MarketingManagement /> },
+          { path: "/admin/cms", element: <CMSManagement /> },
+          { path: "/admin/reports", element: <Reports /> },
+          { path: "/admin/settings", element: <SystemSettings /> },
         ],
       },
     ],
   },
 
-  {
-    path: "/unauthorized",
-    element: <Unauthorized />,
-  },
-
-  {
-    path: "*",
-    element: <NotFound />,
-  },
+  { path: "/unauthorized", element: <Unauthorized /> },
+  { path: "*", element: <NotFound /> },
 ]);
 
 export default router;
