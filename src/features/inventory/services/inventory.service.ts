@@ -32,6 +32,27 @@ const keyFor = (productId: string, variantId?: string) =>
 
 const makeId = () => crypto.randomUUID();
 
+export type ReturnInventoryDisposition = "restock" | "quarantine" | "damaged" | "write-off";
+
+export interface ReturnInventoryReconciliationItem {
+  productId: string;
+  variantId?: string;
+  sku: string;
+  quantity: number;
+  disposition: ReturnInventoryDisposition;
+}
+
+export interface ReturnInventoryReconciliation {
+  id: string;
+  returnId: string;
+  orderId: string;
+  items: ReturnInventoryReconciliationItem[];
+  note?: string;
+  createdAt: string;
+}
+
+const RECONCILIATIONS_KEY = "bredabuy:return-reconciliations";
+
 export const inventoryService = {
   seed(records: InventoryRecord[]) {
     const current = read<InventoryRecord[]>(INVENTORY_KEY, []);
@@ -41,7 +62,13 @@ export const inventoryService = {
         (item) => keyFor(item.productId, item.variantId) === keyFor(record.productId, record.variantId),
       );
       if (index === -1) {
-        merged.push({ ...record, available: Math.max(0, record.onHand - record.reserved) });
+        merged.push({
+          ...record,
+          reserved: record.reserved ?? 0,
+          quarantined: record.quarantined ?? 0,
+          damaged: record.damaged ?? 0,
+          available: Math.max(0, record.onHand - (record.reserved ?? 0)),
+        });
       }
     }
     write(INVENTORY_KEY, merged);
@@ -55,6 +82,15 @@ export const inventoryService = {
 
   list(): InventoryRecord[] {
     return read<InventoryRecord[]>(INVENTORY_KEY, []);
+  },
+
+  movements(): InventoryMovement[] {
+    return read<InventoryMovement[]>(MOVEMENTS_KEY, []);
+  },
+
+  returnReconciliations(returnId?: string): ReturnInventoryReconciliation[] {
+    const records = read<ReturnInventoryReconciliation[]>(RECONCILIATIONS_KEY, []);
+    return returnId ? records.filter((item) => item.returnId === returnId) : records;
   },
 
   async ensureRecords(items: InventoryReservationItem[]): Promise<InventoryRecord[]> {
@@ -78,7 +114,8 @@ export const inventoryService = {
         onHand,
         reserved: 0,
         available: onHand,
-        reorderLevel: 0,
+        quarantined: 0,
+        damaged: 0,
         updatedAt: new Date().toISOString(),
       });
       changed = true;
@@ -174,7 +211,7 @@ export const inventoryService = {
     const now = new Date().toISOString();
     for (const item of reservation.items) {
       const record = inventory.find(
-        (entry) => keyFor(entry.productId, item.variantId) === keyFor(item.productId, item.variantId),
+        (entry) => keyFor(entry.productId, entry.variantId) === keyFor(item.productId, item.variantId),
       );
       if (!record || record.reserved < item.quantity || record.onHand < item.quantity) return null;
       record.onHand -= item.quantity;
@@ -187,6 +224,69 @@ export const inventoryService = {
     write(INVENTORY_KEY, inventory);
     write(RESERVATIONS_KEY, reservations.map((item) => item.id === reservationId ? updated : item));
     return updated;
+  },
+
+  reconcileReturn(
+    returnId: string,
+    orderId: string,
+    items: ReturnInventoryReconciliationItem[],
+    note?: string,
+  ): ReturnInventoryReconciliation {
+    if (!returnId || !orderId || !items.length) {
+      throw new Error("A return, order and at least one returned item are required.");
+    }
+
+    const previous = this.returnReconciliations(returnId);
+    if (previous.length) throw new Error("This return has already been reconciled into inventory.");
+
+    const inventory = read<InventoryRecord[]>(INVENTORY_KEY, []);
+    const movements = read<InventoryMovement[]>(MOVEMENTS_KEY, []);
+    const now = new Date().toISOString();
+
+    for (const item of items) {
+      if (item.quantity <= 0) throw new Error(`Invalid return quantity for ${item.sku}.`);
+      const record = inventory.find(
+        (entry) => keyFor(entry.productId, entry.variantId) === keyFor(item.productId, item.variantId),
+      );
+      if (!record) throw new Error(`Inventory record not found for ${item.sku}.`);
+
+      if (item.disposition === "restock") {
+        record.onHand += item.quantity;
+      } else if (item.disposition === "quarantine") {
+        record.quarantined = (record.quarantined ?? 0) + item.quantity;
+      } else if (item.disposition === "damaged" || item.disposition === "write-off") {
+        record.damaged = (record.damaged ?? 0) + item.quantity;
+      }
+
+      record.available = Math.max(0, record.onHand - record.reserved);
+      record.updatedAt = now;
+
+      movements.unshift({
+        id: makeId(),
+        productId: item.productId,
+        variantId: item.variantId,
+        sku: item.sku,
+        type: "return",
+        quantity: item.quantity,
+        referenceId: returnId,
+        note: `Return reconciliation: ${item.disposition}${note ? ` — ${note}` : ""}`,
+        createdAt: now,
+      });
+    }
+
+    const reconciliation: ReturnInventoryReconciliation = {
+      id: makeId(),
+      returnId,
+      orderId,
+      items,
+      note,
+      createdAt: now,
+    };
+
+    write(INVENTORY_KEY, inventory);
+    write(MOVEMENTS_KEY, movements);
+    write(RECONCILIATIONS_KEY, [reconciliation, ...this.returnReconciliations()]);
+    return reconciliation;
   },
 
   reservations(orderId?: string) {
