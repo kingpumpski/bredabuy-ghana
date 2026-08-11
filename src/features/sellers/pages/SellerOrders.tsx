@@ -1,5 +1,155 @@
-import PagePlaceholder from "@/shared/components/PagePlaceholder";
+import { useMemo, useState } from "react";
+import { CheckCircle2, PackageCheck, RefreshCw, Search, Truck } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { useAuth } from "@/features/auth/hooks/useAuth";
+import orderService from "@/features/orders/services/order.service";
+import type { Order, OrderStatus, ShipmentTracking } from "@/features/orders/types/order.types";
+import { toast } from "@/hooks/use-toast";
+
+const nextStatus: Partial<Record<OrderStatus, OrderStatus>> = {
+  pending: "confirmed",
+  confirmed: "processing",
+  processing: "ready-for-dispatch",
+  shipped: "out-for-delivery",
+  "out-for-delivery": "delivered",
+};
+
+const statusLabel: Record<OrderStatus, string> = {
+  pending: "Pending",
+  confirmed: "Confirmed",
+  processing: "Processing",
+  "ready-for-dispatch": "Ready for dispatch",
+  shipped: "Shipped",
+  "out-for-delivery": "Out for delivery",
+  delivered: "Delivered",
+  cancelled: "Cancelled",
+  returned: "Returned",
+  refunded: "Refunded",
+};
+
+const terminalStatuses: OrderStatus[] = ["delivered", "cancelled", "returned", "refunded"];
+
+const statusTone = (status: OrderStatus) => {
+  if (status === "delivered") return "default" as const;
+  if (["cancelled", "returned", "refunded"].includes(status)) return "destructive" as const;
+  return "secondary" as const;
+};
 
 export default function SellerOrders() {
-  return <PagePlaceholder title="Seller Orders" />;
+  const { user } = useAuth();
+  const [orders, setOrders] = useState<Order[]>(() => (user ? orderService.listForSeller(user.id) : []));
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | OrderStatus>("all");
+  const [dispatchingId, setDispatchingId] = useState<string | null>(null);
+  const [dispatchForm, setDispatchForm] = useState({ carrier: "", trackingNumber: "", trackingUrl: "", estimatedDelivery: "", note: "" });
+
+  const refresh = () => setOrders(user ? orderService.listForSeller(user.id) : []);
+
+  const sellerOrders = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    return orders.filter((order) => {
+      const matchesStatus = statusFilter === "all" || order.status === statusFilter;
+      if (!matchesStatus) return false;
+      if (!normalized) return true;
+      return [order.orderNumber, order.shippingAddress.fullName, order.shippingAddress.phone]
+        .join(" ").toLowerCase().includes(normalized);
+    });
+  }, [orders, query, statusFilter]);
+
+  const metrics = useMemo(() => ({
+    active: orders.filter((order) => !terminalStatuses.includes(order.status)).length,
+    pending: orders.filter((order) => order.status === "pending").length,
+    ready: orders.filter((order) => order.status === "ready-for-dispatch").length,
+    delivered: orders.filter((order) => order.status === "delivered").length,
+  }), [orders]);
+
+  const advance = (order: Order) => {
+    const next = nextStatus[order.status];
+    if (!next) return;
+    const updated = orderService.updateStatus(order.id, next);
+    if (updated) {
+      setOrders((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+      toast({ title: "Order updated", description: `${updated.orderNumber} is now ${statusLabel[updated.status]}.` });
+    }
+  };
+
+  const openDispatch = (order: Order) => {
+    setDispatchingId(order.id);
+    setDispatchForm({
+      carrier: order.shipment?.carrier ?? "",
+      trackingNumber: order.shipment?.trackingNumber ?? "",
+      trackingUrl: order.shipment?.trackingUrl ?? "",
+      estimatedDelivery: order.shipment?.estimatedDelivery ?? "",
+      note: "",
+    });
+  };
+
+  const dispatch = (order: Order) => {
+    if (!dispatchForm.carrier.trim()) {
+      toast({ title: "Carrier required", description: "Select or enter the delivery carrier before dispatching." });
+      return;
+    }
+    const shipment: ShipmentTracking = {
+      carrier: dispatchForm.carrier.trim(),
+      trackingNumber: dispatchForm.trackingNumber.trim() || undefined,
+      trackingUrl: dispatchForm.trackingUrl.trim() || undefined,
+      estimatedDelivery: dispatchForm.estimatedDelivery || undefined,
+    };
+    const updated = orderService.dispatch(order.id, shipment);
+    if (!updated) {
+      toast({ title: "Dispatch unavailable", description: "This order is no longer ready for dispatch." });
+      refresh();
+      setDispatchingId(null);
+      return;
+    }
+    setOrders((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+    setDispatchingId(null);
+    toast({ title: "Shipment dispatched", description: `${updated.orderNumber} has been marked as shipped.` });
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div><p className="text-sm text-muted-foreground">Seller workspace</p><h1 className="text-2xl font-bold tracking-tight">Order Management</h1><p className="mt-1 text-sm text-muted-foreground">Manage fulfilment from confirmation through delivery.</p></div>
+        <Button variant="outline" onClick={refresh}><RefreshCw className="mr-2 h-4 w-4" /> Refresh</Button>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {[["Active", metrics.active], ["Pending", metrics.pending], ["Ready for dispatch", metrics.ready], ["Delivered", metrics.delivered]].map(([label, value]) => (
+          <Card key={label}><CardContent className="p-4"><p className="text-sm text-muted-foreground">{label}</p><p className="mt-1 text-2xl font-bold">{value}</p></CardContent></Card>
+        ))}
+      </div>
+
+      <Card><CardContent className="flex flex-col gap-3 p-4 md:flex-row">
+        <div className="relative flex-1"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search order number, customer or phone" className="pl-9" /></div>
+        <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as "all" | OrderStatus)} className="h-10 rounded-md border bg-background px-3 text-sm"><option value="all">All statuses</option>{Object.keys(statusLabel).map((status) => <option key={status} value={status}>{statusLabel[status as OrderStatus]}</option>)}</select>
+      </CardContent></Card>
+
+      {sellerOrders.length === 0 ? (
+        <Card><CardContent className="flex flex-col items-center justify-center py-16 text-center"><PackageCheck className="mb-4 h-12 w-12 text-muted-foreground" /><h2 className="text-lg font-semibold">No matching orders</h2><p className="mt-1 max-w-md text-sm text-muted-foreground">Adjust the search or status filter to find seller orders.</p></CardContent></Card>
+      ) : <div className="space-y-4">{sellerOrders.map((order) => {
+        const sellerItems = order.items.filter((item) => item.sellerId === user?.id);
+        const next = nextStatus[order.status];
+        const isDispatching = dispatchingId === order.id;
+        return <Card key={order.id} className="overflow-hidden">
+          <CardHeader className="border-b bg-muted/20"><div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"><div><CardTitle className="text-base">{order.orderNumber}</CardTitle><p className="mt-1 text-xs text-muted-foreground">{new Date(order.createdAt).toLocaleString("en-GH")} · {order.shippingAddress.fullName}</p></div><Badge variant={statusTone(order.status)}>{statusLabel[order.status]}</Badge></div></CardHeader>
+          <CardContent className="space-y-5 p-5">
+            <div className="space-y-3">{sellerItems.map((item) => <div key={item.id} className="flex gap-3 rounded-xl border p-3">{item.image ? <img src={item.image} alt={item.name} className="h-16 w-16 rounded-lg object-cover" loading="lazy" /> : <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-muted"><PackageCheck className="h-6 w-6 text-muted-foreground" /></div>}<div className="min-w-0 flex-1"><p className="font-medium">{item.name}</p><p className="text-xs text-muted-foreground">SKU: {item.sku} · Qty: {item.quantity}</p>{item.attributes && Object.keys(item.attributes).length > 0 && <div className="mt-1 flex flex-wrap gap-1">{Object.entries(item.attributes).map(([key, value]) => <Badge key={key} variant="outline" className="text-[10px]">{key}: {value}</Badge>)}</div>}</div><div className="text-right text-sm"><p className="font-semibold">Qty {item.quantity}</p><p className="text-muted-foreground">GH₵ {item.totalPrice.toLocaleString()}</p></div></div>)}</div>
+            <div className="grid gap-4 rounded-xl bg-muted/30 p-4 text-sm sm:grid-cols-3"><div><p className="text-muted-foreground">Customer phone</p><p className="font-medium">{order.shippingAddress.phone}</p></div><div><p className="text-muted-foreground">Payment</p><p className="font-medium capitalize">{order.paymentMethod.replaceAll("-", " ")} · {order.paymentStatus}</p></div><div><p className="text-muted-foreground">Order total</p><p className="font-semibold">GH₵ {order.total.toLocaleString()}</p></div></div>
+            <div className="rounded-xl border p-4 text-sm"><p className="font-semibold">Delivery destination</p><p className="mt-1 text-muted-foreground">{order.shippingAddress.addressLine}, {order.shippingAddress.area}, {order.shippingAddress.city}, {order.shippingAddress.region}</p>{order.shippingAddress.digitalAddress && <p className="mt-1 text-muted-foreground">Digital address: {order.shippingAddress.digitalAddress}</p>}{order.shippingAddress.landmark && <p className="mt-1 text-muted-foreground">Landmark: {order.shippingAddress.landmark}</p>}</div>
+
+            {order.shipment && <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm"><div className="flex flex-wrap items-center justify-between gap-2"><p className="font-semibold">Shipment tracking</p><Badge variant="outline">{order.shipment.carrier}</Badge></div>{order.shipment.trackingNumber && <p className="mt-2 text-muted-foreground">Tracking: <span className="font-medium text-foreground">{order.shipment.trackingNumber}</span></p>}{order.shipment.estimatedDelivery && <p className="mt-1 text-muted-foreground">Estimated delivery: <span className="font-medium text-foreground">{new Date(order.shipment.estimatedDelivery).toLocaleDateString("en-GH")}</span></p>}{order.shipment.trackingUrl && <a className="mt-2 inline-block font-medium text-primary hover:underline" href={order.shipment.trackingUrl} target="_blank" rel="noreferrer">Open tracking</a>}</div>}
+
+            {isDispatching && <div className="rounded-xl border bg-muted/20 p-4"><div className="mb-4"><p className="font-semibold">Dispatch shipment</p><p className="text-sm text-muted-foreground">Enter the carrier and optional tracking details before confirming dispatch.</p></div><div className="grid gap-4 md:grid-cols-2"><label className="text-sm font-medium">Carrier<input value={dispatchForm.carrier} onChange={(event) => setDispatchForm((f) => ({ ...f, carrier: event.target.value }))} placeholder="e.g. DHL, FedEx, local courier" className="mt-1 h-10 w-full rounded-md border bg-background px-3 font-normal outline-none focus:ring-2 focus:ring-primary" /></label><label className="text-sm font-medium">Tracking number<input value={dispatchForm.trackingNumber} onChange={(event) => setDispatchForm((f) => ({ ...f, trackingNumber: event.target.value }))} placeholder="Optional" className="mt-1 h-10 w-full rounded-md border bg-background px-3 font-normal outline-none focus:ring-2 focus:ring-primary" /></label><label className="text-sm font-medium">Tracking URL<input type="url" value={dispatchForm.trackingUrl} onChange={(event) => setDispatchForm((f) => ({ ...f, trackingUrl: event.target.value }))} placeholder="https://..." className="mt-1 h-10 w-full rounded-md border bg-background px-3 font-normal outline-none focus:ring-2 focus:ring-primary" /></label><label className="text-sm font-medium">Estimated delivery<input type="date" value={dispatchForm.estimatedDelivery} onChange={(event) => setDispatchForm((f) => ({ ...f, estimatedDelivery: event.target.value }))} className="mt-1 h-10 w-full rounded-md border bg-background px-3 font-normal outline-none focus:ring-2 focus:ring-primary" /></label></div><div className="mt-4 flex flex-wrap gap-2"><Button onClick={() => dispatch(order)}><Truck className="mr-2 h-4 w-4" /> Confirm dispatch</Button><Button variant="outline" onClick={() => setDispatchingId(null)}>Cancel</Button></div></div>}
+
+            <div className="flex flex-wrap gap-2">{order.status === "ready-for-dispatch" && !isDispatching && <Button onClick={() => openDispatch(order)}><Truck className="mr-2 h-4 w-4" /> Dispatch shipment</Button>}{next && <Button variant={next === "delivered" ? "default" : "outline"} onClick={() => advance(order)}>{next === "delivered" ? <CheckCircle2 className="mr-2 h-4 w-4" /> : <PackageCheck className="mr-2 h-4 w-4" />}Mark {statusLabel[next]}</Button>}{!next && order.status === "delivered" && <span className="text-sm font-medium text-muted-foreground">Fulfilment complete</span>}</div>
+          </CardContent>
+        </Card>;
+      })}</div>}
+    </div>
+  );
 }

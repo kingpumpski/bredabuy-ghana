@@ -1,4 +1,4 @@
-import type { ShippingAddress } from "@/features/shipping/types/shipping.types";
+import type { ShippingAddress, ShippingMethod } from "@/features/shipping/types/shipping.types";
 import type {
   PaymentMethod,
   PaymentStatus,
@@ -15,6 +15,22 @@ export type OrderStatus =
   | "cancelled"
   | "returned"
   | "refunded";
+
+export interface OrderStatusEvent {
+  id: string;
+  status: OrderStatus;
+  timestamp: string;
+  note?: string;
+}
+
+export interface ShipmentTracking {
+  carrier?: string;
+  trackingNumber?: string;
+  trackingUrl?: string;
+  dispatchedAt?: string;
+  estimatedDelivery?: string;
+  deliveredAt?: string;
+}
 
 export interface OrderItem {
   id: string;
@@ -43,9 +59,12 @@ export interface Order {
   total: number;
   currency: "GHS";
   status: OrderStatus;
+  statusHistory?: OrderStatusEvent[];
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
   shippingAddress: ShippingAddress;
+  shippingMethod?: ShippingMethod;
+  shipment?: ShipmentTracking;
   createdAt: string;
   updatedAt: string;
 }
@@ -60,4 +79,5 @@ export interface CreateOrderPayload {
   total: number;
   paymentMethod: PaymentMethod;
   shippingAddress: ShippingAddress;
+  shippingMethod?: ShippingMethod;
 }

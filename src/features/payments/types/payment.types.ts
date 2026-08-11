@@ -18,6 +18,24 @@ export type PaymentStatus =
   | "cancelled"
   | "refunded";
 
+export type PaymentEventType =
+  | "created"
+  | "processing"
+  | "successful"
+  | "failed"
+  | "cancelled"
+  | "refunded";
+
+export interface PaymentEvent {
+  id: string;
+  paymentId: string;
+  type: PaymentEventType;
+  status: PaymentStatus;
+  timestamp: string;
+  reference?: string;
+  note?: string;
+}
+
 export interface PaymentIntent {
   id: string;
   orderId: string;
@@ -27,6 +45,7 @@ export interface PaymentIntent {
   provider: PaymentProvider;
   status: PaymentStatus;
   reference?: string;
+  events?: PaymentEvent[];
   createdAt: string;
   updatedAt?: string;
 }
