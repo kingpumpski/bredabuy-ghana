@@ -1,131 +1,124 @@
 import React from "react";
+import { Eye, Heart, ShoppingCart, Star } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Heart, Star, ShoppingCart, Eye } from "lucide-react";
-import { Product } from "@/types";
+
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/context/CartContext";
 import { cn } from "@/lib/utils";
+import type { Product } from "@/features/products/types/product.types";
 
 interface ProductCardProps {
   product: Product;
   showDiscount?: boolean;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product, showDiscount }) => {
+const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const { addToCart } = useCart();
+  const image = product.images?.[0]?.url;
+  const discount = product.compareAtPrice && product.compareAtPrice > product.price
+    ? Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)
+    : 0;
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("en-GH", {
+  const formatPrice = (price: number) =>
+    new Intl.NumberFormat("en-GH", {
       style: "currency",
       currency: "GHS",
       minimumFractionDigits: 0,
     }).format(price);
-  };
 
   return (
-    <div className="group card-product bg-card border border-border">
-      {/* Image Container */}
+    <article className="group card-product border border-border bg-card">
       <div className="relative aspect-square overflow-hidden">
-        <Link to={`/product/${product.id}`}>
-          <img
-            src={product.image}
-            alt={product.name}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-          />
+        <Link to={`/products/${product.slug || product.id}`} aria-label={`View ${product.name}`}>
+          {image ? (
+            <img
+              src={image}
+              alt={product.images?.[0]?.alt || product.name}
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+              loading="lazy"
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center bg-muted text-sm text-muted-foreground">
+              No image
+            </div>
+          )}
         </Link>
 
-        {/* Badges */}
-        <div className="absolute top-3 left-3 flex flex-col gap-2">
-          {product.discount && (
-            <span className="px-2.5 py-1 bg-accent text-accent-foreground text-xs font-bold rounded-full">
-              -{product.discount}%
+        <div className="absolute left-3 top-3 flex flex-col gap-2">
+          {discount > 0 && (
+            <span className="rounded-full bg-accent px-2.5 py-1 text-xs font-bold text-accent-foreground">
+              -{discount}%
             </span>
           )}
           {product.isNew && (
-            <span className="px-2.5 py-1 bg-secondary text-secondary-foreground text-xs font-bold rounded-full">
+            <span className="rounded-full bg-secondary px-2.5 py-1 text-xs font-bold text-secondary-foreground">
               NEW
             </span>
           )}
         </div>
 
-        {/* Quick Actions */}
-        <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-0 translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
-          <button className="w-9 h-9 bg-card rounded-full shadow-soft flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors">
-            <Heart className="w-4 h-4" />
+        <div className="absolute right-3 top-3 flex translate-x-4 flex-col gap-2 opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100">
+          <button
+            type="button"
+            aria-label="Wishlist"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-card shadow-soft transition-colors hover:bg-primary hover:text-primary-foreground"
+          >
+            <Heart className="h-4 w-4" />
           </button>
           <Link
-            to={`/product/${product.id}`}
-            className="w-9 h-9 bg-card rounded-full shadow-soft flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors"
+            to={`/products/${product.slug || product.id}`}
+            aria-label="Quick view"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-card shadow-soft transition-colors hover:bg-primary hover:text-primary-foreground"
           >
-            <Eye className="w-4 h-4" />
+            <Eye className="h-4 w-4" />
           </Link>
         </div>
 
-        {/* Add to Cart Button */}
-        <div className="absolute inset-x-3 bottom-3 opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
+        <div className="absolute inset-x-3 bottom-3 translate-y-4 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
           <Button
-            variant="cart"
             className="w-full"
+            disabled={product.stock <= 0}
             onClick={() => addToCart(product)}
           >
-            <ShoppingCart className="w-4 h-4 mr-2" />
-            Add to Cart
+            <ShoppingCart className="mr-2 h-4 w-4" />
+            {product.stock > 0 ? "Add to Cart" : "Out of Stock"}
           </Button>
         </div>
       </div>
 
-      {/* Content */}
       <div className="p-4">
-        {/* Category */}
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
-          {product.category}
+        <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          {product.categoryName}
         </p>
 
-        {/* Name */}
-        <Link to={`/product/${product.id}`}>
-          <h3 className="font-semibold text-foreground line-clamp-2 mb-2 hover:text-primary transition-colors">
+        <Link to={`/products/${product.slug || product.id}`}>
+          <h3 className="mb-2 line-clamp-2 font-semibold text-foreground transition-colors hover:text-primary">
             {product.name}
           </h3>
         </Link>
 
-        {/* Rating */}
-        <div className="flex items-center gap-2 mb-3">
+        <div className="mb-3 flex items-center gap-2">
           <div className="flex items-center gap-1">
-            <Star className="w-4 h-4 fill-primary text-primary" />
-            <span className="text-sm font-medium text-foreground">
-              {product.rating}
-            </span>
+            <Star className="h-4 w-4 fill-primary text-primary" />
+            <span className="text-sm font-medium">{product.rating?.average ?? 0}</span>
           </div>
-          <span className="text-sm text-muted-foreground">
-            ({product.reviewCount} reviews)
-          </span>
+          <span className="text-sm text-muted-foreground">({product.rating?.count ?? 0})</span>
         </div>
 
-        {/* Price */}
         <div className="flex items-baseline gap-2">
-          <span className="text-lg font-bold text-foreground">
-            {formatPrice(product.price)}
-          </span>
-          {product.originalPrice && (
-            <span className="text-sm text-muted-foreground line-through">
-              {formatPrice(product.originalPrice)}
-            </span>
+          <span className="text-lg font-bold">{formatPrice(product.price)}</span>
+          {product.compareAtPrice && (
+            <span className="text-sm text-muted-foreground line-through">{formatPrice(product.compareAtPrice)}</span>
           )}
         </div>
 
-        {/* Stock Status */}
         <div className="mt-2">
-          <span
-            className={cn(
-              "text-xs font-medium",
-              product.inStock ? "text-secondary" : "text-destructive"
-            )}
-          >
-            {product.inStock ? "In Stock" : "Out of Stock"}
+          <span className={cn("text-xs font-medium", product.stock > 0 ? "text-secondary" : "text-destructive")}>
+            {product.stock > 0 ? "In Stock" : "Out of Stock"}
           </span>
         </div>
       </div>
-    </div>
+    </article>
   );
 };
 
