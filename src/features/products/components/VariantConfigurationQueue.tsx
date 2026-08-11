@@ -34,7 +34,10 @@ const VariantConfigurationQueue = ({
   );
 
   return (
-    <section className="mt-6 rounded-2xl border bg-card p-5 shadow-sm" aria-labelledby="configuration-queue-title">
+    <section
+      className="mt-6 rounded-2xl border bg-card p-5 shadow-sm"
+      aria-labelledby="configuration-queue-title"
+    >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 id="configuration-queue-title" className="text-base font-semibold">
@@ -44,79 +47,92 @@ const VariantConfigurationQueue = ({
             Add multiple sizes, colours, designs or other combinations from this product.
           </p>
         </div>
-        <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium">
+        <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium" aria-live="polite">
           {configurations.length} {configurations.length === 1 ? "configuration" : "configurations"}
         </span>
       </div>
 
       <div className="mt-4 space-y-3">
-        {configurations.map((item) => (
-          <div key={item.id} className="rounded-xl border bg-background p-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="font-medium">{getVariantSelectionLabel(item.variant)}</p>
-                <p className="mt-1 text-xs text-muted-foreground">SKU: {item.variant.sku}</p>
-                <p className="mt-1 text-sm font-semibold">
-                  GH₵ {Number(item.variant.price).toLocaleString()}
-                </p>
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => onRemove(item.id)}
-                aria-label={`Remove ${getVariantSelectionLabel(item.variant)}`}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
+        {configurations.map((item) => {
+          const label = getVariantSelectionLabel(item.variant);
+          const isAtStockLimit = item.quantity >= item.variant.stock;
 
-            <div className="mt-3 flex items-center justify-between gap-3">
-              <span className="text-xs text-muted-foreground">
-                {item.variant.stock} available
-              </span>
-              <div className="flex items-center rounded-lg border">
+          return (
+            <div key={item.id} className="rounded-xl border bg-background p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-medium">{label}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">SKU: {item.variant.sku}</p>
+                  <p className="mt-1 text-sm font-semibold">
+                    GH₵ {Number(item.variant.price).toLocaleString()}
+                  </p>
+                </div>
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  disabled={item.quantity <= 1}
-                  onClick={() => onQuantityChange(item.id, item.quantity - 1)}
-                  aria-label="Decrease quantity"
+                  onClick={() => onRemove(item.id)}
+                  aria-label={`Remove ${label}`}
                 >
-                  <Minus className="h-4 w-4" />
-                </Button>
-                <span className="w-9 text-center text-sm font-medium">{item.quantity}</span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  disabled={item.quantity >= item.variant.stock}
-                  onClick={() => onQuantityChange(item.id, item.quantity + 1)}
-                  aria-label="Increase quantity"
-                >
-                  <Plus className="h-4 w-4" />
+                  <Trash2 className="h-4 w-4" aria-hidden="true" />
                 </Button>
               </div>
+
+              <div className="mt-3 flex items-center justify-between gap-3">
+                <span className="text-xs text-muted-foreground" aria-live="polite">
+                  {item.variant.stock} available
+                </span>
+                <div
+                  className="flex items-center rounded-lg border"
+                  aria-label={`Quantity for ${label}`}
+                >
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    disabled={item.quantity <= 1}
+                    onClick={() => onQuantityChange(item.id, item.quantity - 1)}
+                    aria-label={`Decrease ${label} quantity`}
+                  >
+                    <Minus className="h-4 w-4" aria-hidden="true" />
+                  </Button>
+                  <span className="w-9 text-center text-sm font-medium" aria-live="polite">
+                    {item.quantity}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    disabled={isAtStockLimit}
+                    onClick={() => onQuantityChange(item.id, item.quantity + 1)}
+                    aria-label={`Increase ${label} quantity`}
+                    title={isAtStockLimit ? "Maximum available quantity reached" : undefined}
+                  >
+                    <Plus className="h-4 w-4" aria-hidden="true" />
+                  </Button>
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="mt-4 flex flex-wrap items-end justify-between gap-4 border-t pt-4">
         <div>
           <p className="text-xs text-muted-foreground">Total quantity</p>
-          <p className="text-lg font-semibold">{totalQuantity}</p>
+          <p className="text-lg font-semibold" aria-live="polite">{totalQuantity}</p>
         </div>
         <div className="text-right">
           <p className="text-xs text-muted-foreground">Configuration total</p>
-          <p className="text-xl font-bold">GH₵ {Number(totalValue).toLocaleString()}</p>
+          <p className="text-xl font-bold" aria-live="polite">
+            GH₵ {Number(totalValue).toLocaleString()}
+          </p>
         </div>
       </div>
 
       <div className="mt-4 grid gap-2 sm:grid-cols-2">
         <Button type="button" variant="outline" onClick={onAddAnother}>
-          <Plus className="mr-2 h-4 w-4" />
+          <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
           Add another configuration
         </Button>
         <Button type="button" onClick={onAddAllToCart}>
