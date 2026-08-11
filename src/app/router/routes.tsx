@@ -1,6 +1,5 @@
-import {
-  createBrowserRouter,
-} from "react-router-dom";
+import { createBrowserRouter, type RouteObject } from "react-router-dom";
+import type { ComponentType } from "react";
 
 import MainLayout from "@/app/layouts/MainLayout";
 import AuthLayout from "@/app/layouts/AuthLayout";
@@ -13,186 +12,115 @@ import PublicRoute from "@/app/guards/PublicRoute";
 import AdminRoute from "@/app/guards/AdminRoute";
 import SellerRoute from "@/app/guards/SellerRoute";
 
-import Home from "@/pages/Home";
-import About from "@/pages/About";
-import Brands from "@/pages/Brands";
-import Categories from "@/pages/Categories";
-import Contact from "@/pages/Contact";
-import Deals from "@/pages/Deals";
-import FlashSales from "@/pages/FlashSales";
-import Cart from "@/pages/Cart";
-import Checkout from "@/pages/Checkout";
-import OrderSuccess from "@/pages/OrderSuccess";
-import NotFound from "@/pages/NotFound";
-import Unauthorized from "@/pages/Unauthorized";
+import type { ReactNode } from "react";
 
-import ProductCataloguePage from "@/features/products/pages/ProductCataloguePage";
-import ProductDetailsPage from "@/features/products/pages/ProductDetailsPage";
+const lazyPage = <T extends ComponentType<any>>(
+  loader: () => Promise<{ default: T }>,
+) => async () => ({ Component: (await loader()).default });
 
-import LoginPage from "@/features/auth/pages/LoginPage";
-import RegisterPage from "@/features/auth/pages/RegisterPage";
-import ForgotPassword from "@/features/auth/pages/ForgotPassword";
-import ResetPassword from "@/features/auth/pages/ResetPassword";
-import VerifyEmail from "@/features/auth/pages/VerifyEmail";
-import VerifyOtp from "@/features/auth/pages/VerifyOtp";
-import MfaPage from "@/features/auth/pages/MfaPage";
+const lazy = (loader: () => Promise<{ default: ComponentType<any> }>): Pick<RouteObject, "lazy"> => ({
+  lazy: lazyPage(loader),
+});
 
-import {
-  AccountDashboardPage,
-  AccountProfilePage,
-  AccountOrdersPage,
-  AccountOrderDetailsPage,
-  AccountWishlistPage,
-  AccountAddressesPage,
-  AccountNotificationsPage,
-  AccountWalletPage,
-  AccountReviewsPage,
-  AccountSecurityPage,
-  AccountSupportPage,
-} from "@/features/account";
+const publicRoutes: RouteObject[] = [
+  { index: true, ...lazy(() => import("@/pages/Home")) },
+  { path: "shop", ...lazy(() => import("@/features/products/pages/ProductCataloguePage")) },
+  { path: "products", ...lazy(() => import("@/features/products/pages/ProductCataloguePage")) },
+  { path: "products/:id", ...lazy(() => import("@/features/products/pages/ProductDetailsPage")) },
+  { path: "product/:id", ...lazy(() => import("@/features/products/pages/ProductDetailsPage")) },
+  { path: "search", ...lazy(() => import("@/features/products/pages/ProductCataloguePage")) },
+  { path: "categories", ...lazy(() => import("@/pages/Categories")) },
+  { path: "brands", ...lazy(() => import("@/pages/Brands")) },
+  { path: "deals", ...lazy(() => import("@/pages/Deals")) },
+  { path: "flash-sales", ...lazy(() => import("@/pages/FlashSales")) },
+  { path: "cart", ...lazy(() => import("@/pages/Cart")) },
+  { path: "checkout", ...lazy(() => import("@/pages/Checkout")) },
+  { path: "order-success", ...lazy(() => import("@/pages/OrderSuccess")) },
+  { path: "about", ...lazy(() => import("@/pages/About")) },
+  { path: "contact", ...lazy(() => import("@/pages/Contact")) },
+  { path: "unauthorized", ...lazy(() => import("@/pages/Unauthorized")) },
+];
 
-import AdminDashboard from "@/features/admin/pages/AdminDashboard";
-import ProductManagement from "@/features/admin/pages/ProductManagement";
-import CategoryManagement from "@/features/admin/pages/CategoryManagement";
-import CustomerManagement from "@/features/admin/pages/CustomerManagement";
-import InventoryManagement from "@/features/admin/pages/InventoryManagement";
-import OrderManagement from "@/features/admin/pages/OrderManagement";
-import SellerManagement from "@/features/admin/pages/SellerManagement";
-import WarehouseManagement from "@/features/admin/pages/WarehouseManagement";
-import LogisticsManagement from "@/features/admin/pages/LogisticsManagement";
-import PaymentManagement from "@/features/admin/pages/PaymentManagement";
-import MarketingManagement from "@/features/admin/pages/MarketingManagement";
-import CMSManagement from "@/features/admin/pages/CMSManagement";
-import Reports from "@/features/admin/pages/Reports";
-import SystemSettings from "@/features/admin/pages/SystemSettings";
+const authRoutes: RouteObject[] = [
+  { path: "/auth/login", ...lazy(() => import("@/features/auth/pages/LoginPage")) },
+  { path: "/auth/register", ...lazy(() => import("@/features/auth/pages/RegisterPage")) },
+  { path: "/auth/forgot-password", ...lazy(() => import("@/features/auth/pages/ForgotPassword")) },
+  { path: "/auth/reset-password", ...lazy(() => import("@/features/auth/pages/ResetPassword")) },
+  { path: "/auth/verify-email", ...lazy(() => import("@/features/auth/pages/VerifyEmail")) },
+  { path: "/auth/verify-otp", ...lazy(() => import("@/features/auth/pages/VerifyOtp")) },
+  { path: "/auth/mfa", ...lazy(() => import("@/features/auth/pages/MfaPage")) },
+];
 
-import SellerDashboard from "@/features/sellers/pages/SellerDashboard";
-import SellerProducts from "@/features/sellers/pages/SellerProducts";
-import CreateProduct from "@/features/sellers/pages/CreateProduct";
-import SellerOrders from "@/features/sellers/pages/SellerOrders";
-import SellerInventory from "@/features/sellers/pages/SellerInventory";
-import SellerCustomers from "@/features/sellers/pages/SellerCustomers";
-import SellerAnalytics from "@/features/sellers/pages/SellerAnalytics";
-import SellerPayouts from "@/features/sellers/pages/SellerPayouts";
-import SellerPromotions from "@/features/sellers/pages/SellerPromotions";
-import SellerCoupons from "@/features/sellers/pages/SellerCoupons";
-import SellerReviews from "@/features/sellers/pages/SellerReviews";
-import SellerSettings from "@/features/sellers/pages/SellerSettings";
+const accountRoutes: RouteObject[] = [
+  { path: "/account", ...lazy(() => import("@/features/account/pages/AccountDashboardPage")) },
+  { path: "/account/profile", ...lazy(() => import("@/features/account/pages/AccountProfilePage")) },
+  { path: "/account/orders", ...lazy(() => import("@/features/account/pages/AccountOrdersPage")) },
+  { path: "/account/orders/:id", ...lazy(() => import("@/features/account/pages/AccountOrderDetailsPage")) },
+  { path: "/account/wishlist", ...lazy(() => import("@/features/account/pages/AccountWishlistPage")) },
+  { path: "/account/addresses", ...lazy(() => import("@/features/account/pages/AccountAddressesPage")) },
+  { path: "/account/notifications", ...lazy(() => import("@/features/account/pages/AccountNotificationsPage")) },
+  { path: "/account/wallet", ...lazy(() => import("@/features/account/pages/AccountWalletPage")) },
+  { path: "/account/reviews", ...lazy(() => import("@/features/account/pages/AccountReviewsPage")) },
+  { path: "/account/security", ...lazy(() => import("@/features/account/pages/AccountSecurityPage")) },
+  { path: "/account/support", ...lazy(() => import("@/features/account/pages/AccountSupportPage")) },
+];
+
+const sellerRoutes: RouteObject[] = [
+  { path: "/seller", ...lazy(() => import("@/features/sellers/pages/SellerDashboard")) },
+  { path: "/seller/products", ...lazy(() => import("@/features/sellers/pages/SellerProducts")) },
+  { path: "/seller/products/new", ...lazy(() => import("@/features/sellers/pages/CreateProduct")) },
+  { path: "/seller/orders", ...lazy(() => import("@/features/sellers/pages/SellerOrders")) },
+  { path: "/seller/inventory", ...lazy(() => import("@/features/sellers/pages/SellerInventory")) },
+  { path: "/seller/customers", ...lazy(() => import("@/features/sellers/pages/SellerCustomers")) },
+  { path: "/seller/analytics", ...lazy(() => import("@/features/sellers/pages/SellerAnalytics")) },
+  { path: "/seller/payouts", ...lazy(() => import("@/features/sellers/pages/SellerPayouts")) },
+  { path: "/seller/promotions", ...lazy(() => import("@/features/sellers/pages/SellerPromotions")) },
+  { path: "/seller/coupons", ...lazy(() => import("@/features/sellers/pages/SellerCoupons")) },
+  { path: "/seller/reviews", ...lazy(() => import("@/features/sellers/pages/SellerReviews")) },
+  { path: "/seller/settings", ...lazy(() => import("@/features/sellers/pages/SellerSettings")) },
+];
+
+const adminRoutes: RouteObject[] = [
+  { path: "/admin", ...lazy(() => import("@/features/admin/pages/AdminDashboard")) },
+  { path: "/admin/products", ...lazy(() => import("@/features/admin/pages/ProductManagement")) },
+  { path: "/admin/categories", ...lazy(() => import("@/features/admin/pages/CategoryManagement")) },
+  { path: "/admin/customers", ...lazy(() => import("@/features/admin/pages/CustomerManagement")) },
+  { path: "/admin/inventory", ...lazy(() => import("@/features/admin/pages/InventoryManagement")) },
+  { path: "/admin/orders", ...lazy(() => import("@/features/admin/pages/OrderManagement")) },
+  { path: "/admin/sellers", ...lazy(() => import("@/features/admin/pages/SellerManagement")) },
+  { path: "/admin/warehouses", ...lazy(() => import("@/features/admin/pages/WarehouseManagement")) },
+  { path: "/admin/logistics", ...lazy(() => import("@/features/admin/pages/LogisticsManagement")) },
+  { path: "/admin/payments", ...lazy(() => import("@/features/admin/pages/PaymentManagement")) },
+  { path: "/admin/marketing", ...lazy(() => import("@/features/admin/pages/MarketingManagement")) },
+  { path: "/admin/cms", ...lazy(() => import("@/features/admin/pages/CMSManagement")) },
+  { path: "/admin/reports", ...lazy(() => import("@/features/admin/pages/Reports")) },
+  { path: "/admin/settings", ...lazy(() => import("@/features/admin/pages/SystemSettings")) },
+];
 
 const router = createBrowserRouter([
   {
     path: "/",
     element: <MainLayout />,
-    children: [
-      { index: true, element: <Home /> },
-      { path: "shop", element: <ProductCataloguePage /> },
-      { path: "products", element: <ProductCataloguePage /> },
-      { path: "products/:id", element: <ProductDetailsPage /> },
-      { path: "product/:id", element: <ProductDetailsPage /> },
-      { path: "search", element: <ProductCataloguePage /> },
-      { path: "categories", element: <Categories /> },
-      { path: "brands", element: <Brands /> },
-      { path: "deals", element: <Deals /> },
-      { path: "flash-sales", element: <FlashSales /> },
-      { path: "cart", element: <Cart /> },
-      { path: "checkout", element: <Checkout /> },
-      { path: "order-success", element: <OrderSuccess /> },
-      { path: "about", element: <About /> },
-      { path: "contact", element: <Contact /> },
-      { path: "unauthorized", element: <Unauthorized /> },
-    ],
+    children: publicRoutes,
   },
-
   {
     element: <AuthLayout />,
-    children: [
-      {
-        element: <PublicRoute />,
-        children: [
-          { path: "/auth/login", element: <LoginPage /> },
-          { path: "/auth/register", element: <RegisterPage /> },
-          { path: "/auth/forgot-password", element: <ForgotPassword /> },
-        ],
-      },
-      { path: "/auth/reset-password", element: <ResetPassword /> },
-      { path: "/auth/verify-email", element: <VerifyEmail /> },
-      { path: "/auth/verify-otp", element: <VerifyOtp /> },
-      { path: "/auth/mfa", element: <MfaPage /> },
-    ],
+    children: [{ element: <PublicRoute />, children: authRoutes.slice(0, 3) }, ...authRoutes.slice(3).map((route) => route)],
   },
-
   {
     element: <ProtectedRoute />,
-    children: [
-      {
-        element: <DashboardLayout />,
-        children: [
-          { path: "/account", element: <AccountDashboardPage /> },
-          { path: "/account/profile", element: <AccountProfilePage /> },
-          { path: "/account/orders", element: <AccountOrdersPage /> },
-          { path: "/account/orders/:id", element: <AccountOrderDetailsPage /> },
-          { path: "/account/wishlist", element: <AccountWishlistPage /> },
-          { path: "/account/addresses", element: <AccountAddressesPage /> },
-          { path: "/account/notifications", element: <AccountNotificationsPage /> },
-          { path: "/account/wallet", element: <AccountWalletPage /> },
-          { path: "/account/reviews", element: <AccountReviewsPage /> },
-          { path: "/account/support", element: <AccountSupportPage /> },
-          { path: "/account/security", element: <AccountSecurityPage /> },
-        ],
-      },
-    ],
+    children: [{ element: <DashboardLayout />, children: accountRoutes }],
   },
-
   {
     element: <SellerRoute />,
-    children: [
-      {
-        element: <SellerLayout />,
-        children: [
-          { path: "/seller", element: <SellerDashboard /> },
-          { path: "/seller/products", element: <SellerProducts /> },
-          { path: "/seller/products/new", element: <CreateProduct /> },
-          { path: "/seller/orders", element: <SellerOrders /> },
-          { path: "/seller/inventory", element: <SellerInventory /> },
-          { path: "/seller/customers", element: <SellerCustomers /> },
-          { path: "/seller/analytics", element: <SellerAnalytics /> },
-          { path: "/seller/payouts", element: <SellerPayouts /> },
-          { path: "/seller/promotions", element: <SellerPromotions /> },
-          { path: "/seller/coupons", element: <SellerCoupons /> },
-          { path: "/seller/reviews", element: <SellerReviews /> },
-          { path: "/seller/settings", element: <SellerSettings /> },
-        ],
-      },
-    ],
+    children: [{ element: <SellerLayout />, children: sellerRoutes }],
   },
-
   {
     element: <AdminRoute />,
-    children: [
-      {
-        element: <AdminLayout />,
-        children: [
-          { path: "/admin", element: <AdminDashboard /> },
-          { path: "/admin/products", element: <ProductManagement /> },
-          { path: "/admin/categories", element: <CategoryManagement /> },
-          { path: "/admin/customers", element: <CustomerManagement /> },
-          { path: "/admin/inventory", element: <InventoryManagement /> },
-          { path: "/admin/orders", element: <OrderManagement /> },
-          { path: "/admin/sellers", element: <SellerManagement /> },
-          { path: "/admin/warehouses", element: <WarehouseManagement /> },
-          { path: "/admin/logistics", element: <LogisticsManagement /> },
-          { path: "/admin/payments", element: <PaymentManagement /> },
-          { path: "/admin/marketing", element: <MarketingManagement /> },
-          { path: "/admin/cms", element: <CMSManagement /> },
-          { path: "/admin/reports", element: <Reports /> },
-          { path: "/admin/settings", element: <SystemSettings /> },
-        ],
-      },
-    ],
+    children: [{ element: <AdminLayout />, children: adminRoutes }],
   },
-
-  { path: "/unauthorized", element: <Unauthorized /> },
-  { path: "*", element: <NotFound /> },
+  { path: "/unauthorized", ...lazy(() => import("@/pages/Unauthorized")) },
+  { path: "*", ...lazy(() => import("@/pages/NotFound")) },
 ]);
 
 export default router;
