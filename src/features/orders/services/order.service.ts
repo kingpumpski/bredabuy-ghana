@@ -133,7 +133,7 @@ export const orderService = {
     return updated;
   },
 
-  updateShipment(id: string, shipment: ShipmentTracking): Order | null {
+  updateShipment(id: string, shipment: Partial<ShipmentTracking>): Order | null {
     const orders = readOrders();
     const index = orders.findIndex((order) => order.id === id);
     if (index < 0) return null;
@@ -148,6 +148,20 @@ export const orderService = {
     orders[index] = updated;
     writeOrders(orders);
     return updated;
+  },
+
+  dispatch(id: string, shipment: ShipmentTracking): Order | null {
+    const order = this.getById(id);
+    if (!order || order.status !== "ready-for-dispatch") return null;
+
+    const now = new Date().toISOString();
+    const updated = this.updateStatus(id, "shipped", "Shipment dispatched");
+    if (!updated) return null;
+
+    return this.updateShipment(id, {
+      ...shipment,
+      dispatchedAt: shipment.dispatchedAt ?? now,
+    });
   },
 
   cancel(id: string): Order | null {
