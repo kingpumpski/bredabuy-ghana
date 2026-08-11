@@ -12,14 +12,10 @@ import PublicRoute from "@/app/guards/PublicRoute";
 import AdminRoute from "@/app/guards/AdminRoute";
 import SellerRoute from "@/app/guards/SellerRoute";
 
-import type { ReactNode } from "react";
+type PageModule = { default: ComponentType };
 
-const lazyPage = <T extends ComponentType<any>>(
-  loader: () => Promise<{ default: T }>,
-) => async () => ({ Component: (await loader()).default });
-
-const lazy = (loader: () => Promise<{ default: ComponentType<any> }>): Pick<RouteObject, "lazy"> => ({
-  lazy: lazyPage(loader),
+const lazy = (loader: () => Promise<PageModule>): Pick<RouteObject, "lazy"> => ({
+  lazy: async () => ({ Component: (await loader()).default }),
 });
 
 const publicRoutes: RouteObject[] = [
@@ -98,14 +94,13 @@ const adminRoutes: RouteObject[] = [
 ];
 
 const router = createBrowserRouter([
-  {
-    path: "/",
-    element: <MainLayout />,
-    children: publicRoutes,
-  },
+  { path: "/", element: <MainLayout />, children: publicRoutes },
   {
     element: <AuthLayout />,
-    children: [{ element: <PublicRoute />, children: authRoutes.slice(0, 3) }, ...authRoutes.slice(3).map((route) => route)],
+    children: [
+      { element: <PublicRoute />, children: authRoutes.slice(0, 3) },
+      ...authRoutes.slice(3),
+    ],
   },
   {
     element: <ProtectedRoute />,
