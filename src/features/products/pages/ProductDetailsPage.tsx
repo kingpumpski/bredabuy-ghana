@@ -42,7 +42,7 @@ function saveRecentlyViewed(product: Product) {
       JSON.stringify([product, ...existing].slice(0, MAX_RECENTLY_VIEWED)),
     );
   } catch {
-    // Local storage is optional; product browsing must continue if unavailable.
+    // Local storage is optional; browsing must continue if unavailable.
   }
 }
 
@@ -59,6 +59,8 @@ const ProductDetailsPage = () => {
   const [related, setRelated] = useState<Product[]>([]);
   const [recentlyViewed, setRecentlyViewed] = useState<Product[]>([]);
   const [shareMessage, setShareMessage] = useState("");
+
+  const variants = product?.variants;
 
   useEffect(() => {
     if (!product) return;
@@ -79,12 +81,12 @@ const ProductDetailsPage = () => {
   useEffect(() => {
     setQuantity(1);
     setSelectedImage(0);
-    setSelectedVariant(product?.variants?.[0]?.id);
-  }, [product?.id]);
+    setSelectedVariant(variants?.[0]?.id);
+  }, [product?.id, variants]);
 
   const variant = useMemo(
-    () => product?.variants?.find((item) => item.id === selectedVariant),
-    [product, selectedVariant],
+    () => variants?.find((item) => item.id === selectedVariant),
+    [variants, selectedVariant],
   );
 
   if (isLoading) {
@@ -122,11 +124,9 @@ const ProductDetailsPage = () => {
   const effectivePrice = variant?.price ?? product.price;
   const effectiveStock = variant?.stock ?? product.stock;
   const effectiveCompareAtPrice = variant?.compareAtPrice ?? product.compareAtPrice;
-  const hasVariants = Boolean(product.variants?.length);
+  const hasVariants = Boolean(variants?.length);
 
-  const handleAddToCart = () => {
-    addToCart(product, quantity);
-  };
+  const handleAddToCart = () => addToCart(product, quantity);
 
   const handleShare = async () => {
     const shareData = {
@@ -144,7 +144,7 @@ const ProductDetailsPage = () => {
         window.setTimeout(() => setShareMessage(""), 1800);
       }
     } catch {
-      // Sharing can be cancelled by the user; no error state is required.
+      // Sharing can be cancelled by the user.
     }
   };
 
@@ -185,9 +185,7 @@ const ProductDetailsPage = () => {
               {image ? (
                 <img src={image} alt={product.name} className="aspect-square w-full object-cover" />
               ) : (
-                <div className="flex aspect-square items-center justify-center text-muted-foreground">
-                  No image available
-                </div>
+                <div className="flex aspect-square items-center justify-center text-muted-foreground">No image available</div>
               )}
             </div>
 
@@ -230,9 +228,7 @@ const ProductDetailsPage = () => {
             <div className="mt-6 flex items-end gap-3">
               <span className="text-3xl font-bold">GH₵ {Number(effectivePrice).toLocaleString()}</span>
               {effectiveCompareAtPrice && (
-                <span className="pb-1 text-lg text-muted-foreground line-through">
-                  GH₵ {Number(effectiveCompareAtPrice).toLocaleString()}
-                </span>
+                <span className="pb-1 text-lg text-muted-foreground line-through">GH₵ {Number(effectiveCompareAtPrice).toLocaleString()}</span>
               )}
             </div>
 
@@ -242,7 +238,7 @@ const ProductDetailsPage = () => {
               <div className="mt-6">
                 <p className="mb-3 text-sm font-semibold">Choose an option</p>
                 <div className="flex flex-wrap gap-2">
-                  {product.variants!.map((item) => (
+                  {variants!.map((item) => (
                     <Button
                       key={item.id}
                       type="button"
@@ -279,11 +275,9 @@ const ProductDetailsPage = () => {
                 <ShoppingCart className="mr-2 h-5 w-5" />
                 Add to Cart
               </Button>
-
               <Button variant={isWishlisted ? "default" : "outline"} size="icon" onClick={() => setIsWishlisted((value) => !value)} aria-label="Add to wishlist">
                 <Heart className={`h-5 w-5 ${isWishlisted ? "fill-current" : ""}`} />
               </Button>
-
               <Button variant="outline" size="icon" onClick={handleShare} aria-label="Share product">
                 <Share2 className="h-5 w-5" />
               </Button>
@@ -322,9 +316,7 @@ const ProductDetailsPage = () => {
                 <h2 className="text-2xl font-bold">You May Also Like</h2>
                 <p className="mt-1 text-muted-foreground">More products from the same category.</p>
               </div>
-              <Link to={`/products?category=${encodeURIComponent(product.categoryId)}`} className="text-sm font-semibold hover:underline">
-                View category
-              </Link>
+              <Link to={`/products?category=${encodeURIComponent(product.categoryId)}`} className="text-sm font-semibold hover:underline">View category</Link>
             </div>
             <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
               {related.map((item) => <ProductCard key={item.id} product={item} />)}
