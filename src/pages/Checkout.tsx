@@ -7,9 +7,12 @@ import { Button } from "@/components/ui/button";
 import { VAT_RATE } from "@/data/mockData";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { checkoutService } from "@/features/checkout/services/checkout.service";
 import { validateCheckoutForm, type CheckoutFormValues } from "@/features/checkout/utils/checkout.validation";
+import type { PaymentMethod } from "@/features/payments/types/payment.types";
+import type { ShippingAddress } from "@/features/shipping/types/shipping.types";
 
-type PaymentMethod = "mobile-money" | "bank-transfer" | "cod";
+type CheckoutPaymentMethod = PaymentMethod;
 
 const initialForm: CheckoutFormValues = {
   firstName: "",
@@ -24,7 +27,7 @@ const initialForm: CheckoutFormValues = {
 const Checkout: React.FC = () => {
   const { items, subtotal, clearCart } = useCart();
   const navigate = useNavigate();
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("mobile-money");
+  const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>("mobile-money");
   const [isProcessing, setIsProcessing] = useState(false);
   const [form, setForm] = useState<CheckoutFormValues>(initialForm);
   const [errors, setErrors] = useState<ReturnType<typeof validateCheckoutForm>>({});
@@ -61,12 +64,68 @@ const Checkout: React.FC = () => {
     }
 
     setIsProcessing(true);
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-    const transactionId = `TXN-${Date.now()}-${Math.random().toString(36).slice(2, 11).toUpperCase()}`;
-    const trackingNumber = `TRK-${Date.now()}`;
-    clearCart();
-    toast({ title: "Order Placed Successfully! 🎉", description: `Transaction ID: ${transactionId}. Tracking: ${trackingNumber}` });
-    navigate("/order-success", { state: { transactionId, trackingNumber, total, paymentMethod, customer: form } });
+
+    try {
+      const shippingAddress: ShippingAddress = {
+        fullName: `${form.firstName.trim()} ${form.lastName.trim()}`.trim(),
+        phone: form.phone.trim(),
+        email: form.email.trim() || undefined,
+        region: form.region,
+        city: form.city.trim(),
+        area: form.city.trim(),
+        addressLine: form.address.trim(),
+      };
+
+      const order = checkoutService.submit({
+        customerId: `guest:${(form.email || form.phone).trim().toLowerCase()}`,
+        items: items.map((item) => ({
+          id: crypto.randomUUID(),
+          productId: item.product.id,
+          variantId: item.variantId,
+          name: item.product.name,
+          sku: item.sku,
+          image: item.product.image,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          totalPrice: item.unitPrice * item.quantity,
+          sellerId: item.product.sellerId,
+          sellerName: item.product.sellerName,
+          attributes: item.attributes,
+        })),
+        totals: {
+          subtotal,
+          discount: 0,
+          shipping,
+          tax: vat,
+          total,
+          itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
+        },
+        paymentMethod,
+        shippingAddress,
+      });
+
+      clearCart();
+      toast({
+        title: "Order placed successfully! 🎉",
+        description: `${order.orderNumber} has been created and saved.`,
+      });
+      navigate("/order-success", {
+        state: {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          total: order.total,
+          paymentMethod: order.paymentMethod,
+        },
+      });
+    } catch {
+      toast({
+        title: "Unable to place order",
+        description: "Your cart was not cleared. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   if (items.length === 0) {
@@ -99,8 +158,8 @@ const Checkout: React.FC = () => {
               <div className="space-y-4">{[
                 { id: "mobile-money", icon: Smartphone, name: "Mobile Money", description: "MTN, Vodafone, AirtelTigo" },
                 { id: "bank-transfer", icon: CreditCard, name: "Bank Transfer", description: "Direct bank transfer" },
-                { id: "cod", icon: Banknote, name: "Cash on Delivery", description: "Pay when you receive" },
-              ].map((method) => <button key={method.id} type="button" onClick={() => setPaymentMethod(method.id as PaymentMethod)} aria-pressed={paymentMethod === method.id} className={cn("w-full flex items-center gap-4 rounded-xl border-2 p-4 transition-all", paymentMethod === method.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/50")}><div className={cn("flex h-12 w-12 items-center justify-center rounded-xl", paymentMethod === method.id ? "bg-primary text-primary-foreground" : "bg-muted")}><method.icon className="h-6 w-6" /></div><div className="flex-1 text-left"><p className="font-semibold">{method.name}</p><p className="text-sm text-muted-foreground">{method.description}</p></div>{paymentMethod === method.id && <Check className="h-6 w-6 text-primary" />}</button>)}</div>
+                { id: "cash-on-delivery", icon: Banknote, name: "Cash on Delivery", description: "Pay when you receive" },
+              ].map((method) => <button key={method.id} type="button" onClick={() => setPaymentMethod(method.id as CheckoutPaymentMethod)} aria-pressed={paymentMethod === method.id} className={cn("w-full flex items-center gap-4 rounded-xl border-2 p-4 transition-all", paymentMethod === method.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/50")}><div className={cn("flex h-12 w-12 items-center justify-center rounded-xl", paymentMethod === method.id ? "bg-primary text-primary-foreground" : "bg-muted")}><method.icon className="h-6 w-6" /></div><div className="flex-1 text-left"><p className="font-semibold">{method.name}</p><p className="text-sm text-muted-foreground">{method.description}</p></div>{paymentMethod === method.id && <Check className="h-6 w-6 text-primary" />}</button>)}</div>
             </section>
           </div>
 
