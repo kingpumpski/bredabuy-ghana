@@ -183,7 +183,16 @@ const ProductDetailsPage = () => {
           <section>
             <div className="overflow-hidden rounded-2xl border bg-muted/20 shadow-soft">
               {image ? (
-                <img src={image} alt={product.name} className="aspect-square w-full object-cover" />
+                <img
+                  src={image}
+                  alt={product.name}
+                  width={800}
+                  height={800}
+                  loading="eager"
+                  decoding="async"
+                  fetchPriority="high"
+                  className="aspect-square w-full object-cover"
+                />
               ) : (
                 <div className="flex aspect-square items-center justify-center text-muted-foreground">No image available</div>
               )}
@@ -199,7 +208,15 @@ const ProductDetailsPage = () => {
                     className={`overflow-hidden rounded-lg border ${selectedImage === index ? "ring-2 ring-primary" : ""}`}
                     aria-label={`View product image ${index + 1}`}
                   >
-                    <img src={item.url} alt={item.alt || product.name} className="aspect-square w-full object-cover" />
+                    <img
+                      src={item.url}
+                      alt={item.alt || product.name}
+                      width={160}
+                      height={160}
+                      loading="lazy"
+                      decoding="async"
+                      className="aspect-square w-full object-cover"
+                    />
                   </button>
                 ))}
               </div>
