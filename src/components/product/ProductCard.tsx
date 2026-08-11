@@ -1,4 +1,4 @@
-import React from "react";
+import React, { memo, useCallback } from "react";
 import { Eye, Heart, ShoppingCart, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -12,30 +12,62 @@ interface ProductCardProps {
   showDiscount?: boolean;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
-  const { addToCart } = useCart();
-  const image = product.images?.[0]?.url;
-  const discount = product.compareAtPrice && product.compareAtPrice > product.price
-    ? Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)
-    : 0;
+const priceFormatter = new Intl.NumberFormat("en-GH", {
+  style: "currency",
+  currency: "GHS",
+  minimumFractionDigits: 0,
+});
 
-  const formatPrice = (price: number) =>
-    new Intl.NumberFormat("en-GH", {
-      style: "currency",
-      currency: "GHS",
-      minimumFractionDigits: 0,
-    }).format(price);
+const getProductPath = (product: Product) =>
+  `/products/${product.slug || product.id}`;
+
+const AddToCartButton = memo(function AddToCartButton({
+  product,
+}: {
+  product: Product;
+}) {
+  const { addToCart } = useCart();
+
+  const handleAddToCart = useCallback(() => {
+    addToCart(product);
+  }, [addToCart, product]);
+
+  return (
+    <Button
+      className="w-full"
+      disabled={product.stock <= 0}
+      onClick={handleAddToCart}
+    >
+      <ShoppingCart className="mr-2 h-4 w-4" />
+      {product.stock > 0 ? "Add to Cart" : "Out of Stock"}
+    </Button>
+  );
+});
+
+const ProductCard = memo(function ProductCard({ product }: ProductCardProps) {
+  const image = product.images?.[0]?.url;
+  const imageAlt = product.images?.[0]?.alt || product.name;
+  const productPath = getProductPath(product);
+  const discount =
+    product.compareAtPrice && product.compareAtPrice > product.price
+      ? Math.round(
+          ((product.compareAtPrice - product.price) / product.compareAtPrice) * 100
+        )
+      : 0;
 
   return (
     <article className="group card-product border border-border bg-card">
       <div className="relative aspect-square overflow-hidden">
-        <Link to={`/products/${product.slug || product.id}`} aria-label={`View ${product.name}`}>
+        <Link to={productPath} aria-label={`View ${product.name}`}>
           {image ? (
             <img
               src={image}
-              alt={product.images?.[0]?.alt || product.name}
+              alt={imageAlt}
+              width={600}
+              height={600}
               className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
               loading="lazy"
+              decoding="async"
             />
           ) : (
             <div className="flex h-full items-center justify-center bg-muted text-sm text-muted-foreground">
@@ -66,8 +98,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             <Heart className="h-4 w-4" />
           </button>
           <Link
-            to={`/products/${product.slug || product.id}`}
-            aria-label="Quick view"
+            to={productPath}
+            aria-label={`Quick view ${product.name}`}
             className="flex h-9 w-9 items-center justify-center rounded-full bg-card shadow-soft transition-colors hover:bg-primary hover:text-primary-foreground"
           >
             <Eye className="h-4 w-4" />
@@ -75,14 +107,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         </div>
 
         <div className="absolute inset-x-3 bottom-3 translate-y-4 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
-          <Button
-            className="w-full"
-            disabled={product.stock <= 0}
-            onClick={() => addToCart(product)}
-          >
-            <ShoppingCart className="mr-2 h-4 w-4" />
-            {product.stock > 0 ? "Add to Cart" : "Out of Stock"}
-          </Button>
+          <AddToCartButton product={product} />
         </div>
       </div>
 
@@ -91,7 +116,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           {product.categoryName}
         </p>
 
-        <Link to={`/products/${product.slug || product.id}`}>
+        <Link to={productPath}>
           <h3 className="mb-2 line-clamp-2 font-semibold text-foreground transition-colors hover:text-primary">
             {product.name}
           </h3>
@@ -102,24 +127,35 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             <Star className="h-4 w-4 fill-primary text-primary" />
             <span className="text-sm font-medium">{product.rating?.average ?? 0}</span>
           </div>
-          <span className="text-sm text-muted-foreground">({product.rating?.count ?? 0})</span>
+          <span className="text-sm text-muted-foreground">
+            ({product.rating?.count ?? 0})
+          </span>
         </div>
 
         <div className="flex items-baseline gap-2">
-          <span className="text-lg font-bold">{formatPrice(product.price)}</span>
+          <span className="text-lg font-bold">
+            {priceFormatter.format(product.price)}
+          </span>
           {product.compareAtPrice && (
-            <span className="text-sm text-muted-foreground line-through">{formatPrice(product.compareAtPrice)}</span>
+            <span className="text-sm text-muted-foreground line-through">
+              {priceFormatter.format(product.compareAtPrice)}
+            </span>
           )}
         </div>
 
         <div className="mt-2">
-          <span className={cn("text-xs font-medium", product.stock > 0 ? "text-secondary" : "text-destructive")}>
+          <span
+            className={cn(
+              "text-xs font-medium",
+              product.stock > 0 ? "text-secondary" : "text-destructive"
+            )}
+          >
             {product.stock > 0 ? "In Stock" : "Out of Stock"}
           </span>
         </div>
       </div>
     </article>
   );
-};
+});
 
 export default ProductCard;
