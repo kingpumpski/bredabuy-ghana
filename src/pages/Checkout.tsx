@@ -54,7 +54,7 @@ const Checkout: React.FC = () => {
     const validationErrors = validateCheckoutForm(form);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
-      toast({ title: "Complete your delivery details", description: "Please correct the highlighted fields before placing your order.", variant: "destructive" });
+      toast({ title: "Complete your delivery details", description: "Please correct the highlighted fields before placing the order.", variant: "destructive" });
       return;
     }
     if (unavailableItems.length > 0) {
@@ -76,7 +76,7 @@ const Checkout: React.FC = () => {
         addressLine: form.address.trim(),
       };
 
-      const order = checkoutService.submit({
+      const order = await checkoutService.submit({
         customerId: `guest:${(form.email || form.phone).trim().toLowerCase()}`,
         items: items.map((item) => ({
           id: crypto.randomUUID(),
@@ -107,22 +107,26 @@ const Checkout: React.FC = () => {
       clearCart();
       toast({
         title: "Order placed successfully! 🎉",
-        description: `${order.orderNumber} has been created and saved.`,
+        description: `${order.order.orderNumber} has been created and inventory reserved.`,
       });
       navigate("/order-success", {
         state: {
-          orderId: order.id,
-          orderNumber: order.orderNumber,
-          total: order.total,
-          paymentMethod: order.paymentMethod,
+          orderId: order.order.id,
+          orderNumber: order.order.orderNumber,
+          total: order.order.total,
+          paymentMethod: order.order.paymentMethod,
         },
       });
-    } catch {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Inventory could not be reserved.";
       toast({
         title: "Unable to place order",
-        description: "Your cart was not cleared. Please try again.",
+        description: message.includes("Insufficient stock")
+          ? `${message} Return to your cart to review the affected configuration.`
+          : "Your cart was not cleared. Please try again.",
         variant: "destructive",
       });
+      if (message.includes("Insufficient stock")) navigate("/cart");
     } finally {
       setIsProcessing(false);
     }
@@ -167,7 +171,7 @@ const Checkout: React.FC = () => {
             <h2 className="mb-6 text-xl font-display font-bold">Order Summary</h2>
             <div className="mb-6 space-y-4">{items.map((item) => { const unavailable = item.availableStock <= 0 || item.quantity > item.availableStock; const attributeSummary = item.attributes ? Object.entries(item.attributes).map(([name,value]) => `${name}: ${value}`).join(" • ") : ""; return <article key={`${item.product.id}:${item.variantId ?? "base"}`} className={cn("flex gap-3 rounded-lg p-2", unavailable && "bg-destructive/5")}><div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg"><img src={item.product.image} alt={item.product.name} className="h-full w-full object-cover" loading="lazy" decoding="async" /></div><div className="min-w-0 flex-1"><p className="line-clamp-2 text-sm font-medium">{item.product.name}</p>{attributeSummary && <p className="mt-1 text-xs text-muted-foreground">{attributeSummary}</p>}<p className="mt-1 text-xs text-muted-foreground">SKU: {item.sku} · Qty: {item.quantity}</p>{unavailable && <p className="mt-1 text-xs font-medium text-destructive">Unavailable</p>}</div><p className="text-sm font-semibold">{formatPrice(item.unitPrice * item.quantity)}</p></article>; })}</div>
             <div className="mb-6 h-px bg-border" /><div className="mb-6 space-y-3"><div className="flex justify-between text-sm"><span className="text-muted-foreground">Subtotal</span><span>{formatPrice(subtotal)}</span></div><div className="flex justify-between text-sm"><span className="text-muted-foreground">Shipping</span><span>{shipping === 0 ? "Free" : formatPrice(shipping)}</span></div><div className="flex justify-between text-sm"><span className="text-muted-foreground">VAT</span><span>{formatPrice(vat)}</span></div><div className="h-px bg-border" /><div className="flex justify-between text-lg font-bold"><span>Total</span><span className="text-primary">{formatPrice(total)}</span></div></div>
-            <Button type="submit" variant="hero" className="w-full" disabled={isProcessing || unavailableItems.length > 0}>{isProcessing ? <span className="flex items-center gap-2"><span className="h-5 w-5 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />Processing...</span> : <><Lock className="mr-2 h-5 w-5" />Place Order</>}</Button>
+            <Button type="submit" variant="hero" className="w-full" disabled={isProcessing || unavailableItems.length > 0}>{isProcessing ? <span className="flex items-center gap-2"><span className="h-5 w-5 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />Checking stock...</span> : <><Lock className="mr-2 h-5 w-5" />Place Order</>}</Button>
             <p className="mt-4 flex items-center justify-center gap-1 text-center text-xs text-muted-foreground"><Lock className="h-3 w-3" />Secure checkout powered by BredaBuy</p>
           </div></aside>
         </div>
