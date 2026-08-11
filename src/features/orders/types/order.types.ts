@@ -16,6 +16,13 @@ export type OrderStatus =
   | "returned"
   | "refunded";
 
+export interface OrderStatusEvent {
+  id: string;
+  status: OrderStatus;
+  timestamp: string;
+  note?: string;
+}
+
 export interface OrderItem {
   id: string;
   productId: string;
@@ -43,6 +50,7 @@ export interface Order {
   total: number;
   currency: "GHS";
   status: OrderStatus;
+  statusHistory?: OrderStatusEvent[];
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
   shippingAddress: ShippingAddress;
