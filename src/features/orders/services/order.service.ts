@@ -2,6 +2,19 @@ import type { CreateOrderPayload, Order, OrderStatus } from "../types/order.type
 
 const STORAGE_KEY = "bredabuy:orders";
 
+const STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
+  pending: ["confirmed", "cancelled"],
+  confirmed: ["processing", "cancelled"],
+  processing: ["ready-for-dispatch", "cancelled"],
+  "ready-for-dispatch": ["shipped", "cancelled"],
+  shipped: ["out-for-delivery"],
+  "out-for-delivery": ["delivered"],
+  delivered: ["returned"],
+  returned: ["refunded"],
+  cancelled: ["refunded"],
+  refunded: [],
+};
+
 const readOrders = (): Order[] => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -56,11 +69,23 @@ export const orderService = {
     return readOrders().find((order) => order.orderNumber === orderNumber) ?? null;
   },
 
+  canTransition(from: OrderStatus, to: OrderStatus): boolean {
+    return from === to || STATUS_TRANSITIONS[from].includes(to);
+  },
+
+  getNextStatuses(status: OrderStatus): OrderStatus[] {
+    return STATUS_TRANSITIONS[status];
+  },
+
   updateStatus(id: string, status: OrderStatus): Order | null {
     const orders = readOrders();
     const index = orders.findIndex((order) => order.id === id);
     if (index < 0) return null;
-    const updated = { ...orders[index], status, updatedAt: new Date().toISOString() };
+
+    const current = orders[index];
+    if (!this.canTransition(current.status, status)) return null;
+
+    const updated = { ...current, status, updatedAt: new Date().toISOString() };
     orders[index] = updated;
     writeOrders(orders);
     return updated;
@@ -68,7 +93,7 @@ export const orderService = {
 
   cancel(id: string): Order | null {
     const order = this.getById(id);
-    if (!order || !["pending", "confirmed"].includes(order.status)) return null;
+    if (!order || !this.canTransition(order.status, "cancelled")) return null;
     return this.updateStatus(id, "cancelled");
   },
 };
