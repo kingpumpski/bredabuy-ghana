@@ -1,12 +1,30 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
-import { Product, CartItem } from "@/types";
+import React, { createContext, useCallback, useContext, useMemo } from "react";
+
 import { toast } from "@/hooks/use-toast";
+import { useCartStore } from "@/features/cart/store/cart.store";
+import type { CartItem as MarketplaceCartItem } from "@/features/cart/types/cart.types";
+import type { Product as MarketplaceProduct, ProductVariant } from "@/features/products/types/product.types";
+import type { CartItem as LegacyCartItem, Product as LegacyProduct } from "@/types";
+
+export type CartProductInput = MarketplaceProduct | LegacyProduct;
+
+export interface LegacyCartItemWithVariant extends LegacyCartItem {
+  variantId?: string;
+  attributes?: Record<string, string>;
+  sku: string;
+  unitPrice: number;
+  availableStock: number;
+}
 
 interface CartContextType {
-  items: CartItem[];
-  addToCart: (product: Product) => void;
-  removeFromCart: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  items: LegacyCartItemWithVariant[];
+  addToCart: (
+    product: CartProductInput,
+    quantity?: number,
+    variant?: ProductVariant,
+  ) => void;
+  removeFromCart: (productId: string, variantId?: string) => void;
+  updateQuantity: (productId: string, quantity: number, variantId?: string) => void;
   clearCart: () => void;
   totalItems: number;
   subtotal: number;
@@ -14,68 +32,136 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [items, setItems] = useState<CartItem[]>([]);
+function isMarketplaceProduct(product: CartProductInput): product is MarketplaceProduct {
+  return "images" in product;
+}
 
-  const addToCart = useCallback((product: Product) => {
-    setItems((prev) => {
-      const existingItem = prev.find((item) => item.product.id === product.id);
-      if (existingItem) {
+function toMarketplaceCartItem(
+  product: CartProductInput,
+  quantity: number,
+  variant?: ProductVariant,
+): MarketplaceCartItem {
+  if (isMarketplaceProduct(product)) {
+    const image = variant?.image ?? product.images[0]?.url;
+    const unitPrice = variant?.price ?? product.price;
+    const availableStock = variant?.stock ?? product.stock;
+
+    return {
+      id: `${product.id}:${variant?.id ?? "base"}`,
+      productId: product.id,
+      variantId: variant?.id,
+      name: product.name,
+      sku: variant?.sku ?? product.sku,
+      image,
+      unitPrice,
+      compareAtPrice: variant?.compareAtPrice ?? product.compareAtPrice,
+      quantity,
+      availableStock,
+      sellerId: product.sellerId,
+      sellerName: product.sellerName,
+      attributes: variant?.attributes,
+    };
+  }
+
+  return {
+    id: `${product.id}:base`,
+    productId: product.id,
+    name: product.name,
+    sku: product.id,
+    image: product.image,
+    unitPrice: product.price,
+    compareAtPrice: product.originalPrice,
+    quantity,
+    availableStock: product.inStock ? Number.MAX_SAFE_INTEGER : 0,
+  };
+}
+
+function toLegacyCartItem(item: MarketplaceCartItem): LegacyCartItemWithVariant {
+  return {
+    product: {
+      id: item.productId,
+      name: item.name,
+      description: "",
+      price: item.unitPrice,
+      originalPrice: item.compareAtPrice,
+      image: item.image ?? "/placeholder.svg",
+      category: "",
+      brand: item.sellerName ?? "",
+      rating: 0,
+      reviewCount: 0,
+      inStock: item.availableStock > 0,
+    },
+    quantity: item.quantity,
+    variantId: item.variantId,
+    attributes: item.attributes,
+    sku: item.sku,
+    unitPrice: item.unitPrice,
+    availableStock: item.availableStock,
+  };
+}
+
+export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const storeItems = useCartStore((state) => state.items);
+  const addItem = useCartStore((state) => state.addItem);
+  const removeItem = useCartStore((state) => state.removeItem);
+  const updateStoreQuantity = useCartStore((state) => state.updateQuantity);
+  const clearStore = useCartStore((state) => state.clearCart);
+
+  const items = useMemo(
+    () => storeItems.map(toLegacyCartItem),
+    [storeItems],
+  );
+
+  const addToCart = useCallback(
+    (product: CartProductInput, quantity = 1, variant?: ProductVariant) => {
+      const item = toMarketplaceCartItem(product, quantity, variant);
+
+      if (item.availableStock <= 0) {
         toast({
-          title: "Quantity Updated",
-          description: `${product.name} quantity increased`,
+          title: "Out of Stock",
+          description: "This product configuration is currently unavailable.",
+          variant: "destructive",
         });
-        return prev.map((item) =>
-          item.product.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
+        return;
       }
+
+      addItem(item, quantity);
       toast({
         title: "Added to Cart",
-        description: `${product.name} has been added to your cart`,
+        description: variant
+          ? `${product.name} — ${Object.values(variant.attributes ?? {}).join(" / ")}`
+          : `${product.name} has been added to your cart`,
       });
-      return [...prev, { product, quantity: 1 }];
-    });
-  }, []);
+    },
+    [addItem],
+  );
 
-  const removeFromCart = useCallback((productId: string) => {
-    setItems((prev) => {
-      const item = prev.find((i) => i.product.id === productId);
-      if (item) {
-        toast({
-          title: "Removed from Cart",
-          description: `${item.product.name} has been removed`,
-        });
-      }
-      return prev.filter((item) => item.product.id !== productId);
-    });
-  }, []);
+  const removeFromCart = useCallback(
+    (productId: string, variantId?: string) => {
+      removeItem(productId, variantId);
+    },
+    [removeItem],
+  );
 
-  const updateQuantity = useCallback((productId: string, quantity: number) => {
-    if (quantity < 1) {
-      removeFromCart(productId);
-      return;
-    }
-    setItems((prev) =>
-      prev.map((item) =>
-        item.product.id === productId ? { ...item, quantity } : item
-      )
-    );
-  }, [removeFromCart]);
+  const updateQuantity = useCallback(
+    (productId: string, quantity: number, variantId?: string) => {
+      updateStoreQuantity(productId, quantity, variantId);
+    },
+    [updateStoreQuantity],
+  );
 
   const clearCart = useCallback(() => {
-    setItems([]);
+    clearStore();
     toast({
       title: "Cart Cleared",
       description: "All items have been removed from your cart",
     });
-  }, []);
+  }, [clearStore]);
 
-  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-  const subtotal = items.reduce(
-    (sum, item) => sum + item.product.price * item.quantity,
-    0
+  const totalItems = storeItems.reduce((sum, item) => sum + item.quantity, 0);
+  const subtotal = storeItems.reduce(
+    (sum, item) => sum + item.unitPrice * item.quantity,
+    0,
   );
 
   return (
