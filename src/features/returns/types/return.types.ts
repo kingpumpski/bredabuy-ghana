@@ -18,6 +18,8 @@ export type ReturnStatus =
   | "refunded"
   | "cancelled";
 
+export type ReturnInventoryDisposition = "restock" | "quarantine" | "damaged" | "write-off";
+
 export interface ReturnItem {
   id: string;
   orderItemId: string;
@@ -40,6 +42,8 @@ export interface ReturnRequest {
   note?: string;
   status: ReturnStatus;
   refundAmount: number;
+  inventoryDisposition?: ReturnInventoryDisposition;
+  inventoryReconciledAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -72,4 +76,11 @@ export const RETURN_STATUS_LABELS: Record<ReturnStatus, string> = {
   "refund-pending": "Refund pending",
   refunded: "Refund completed",
   cancelled: "Cancelled",
+};
+
+export const RETURN_DISPOSITION_LABELS: Record<ReturnInventoryDisposition, string> = {
+  restock: "Resalable — return to available stock",
+  quarantine: "Quarantine — inspect before release",
+  damaged: "Damaged — keep out of saleable stock",
+  "write-off": "Write-off — remove from sellable inventory",
 };
