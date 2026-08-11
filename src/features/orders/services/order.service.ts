@@ -35,7 +35,6 @@ export const orderService = {
       createdAt: now,
       updatedAt: now,
     };
-
     writeOrders([order, ...readOrders()]);
     return order;
   },
@@ -43,6 +42,10 @@ export const orderService = {
   list(customerId?: string): Order[] {
     const orders = readOrders();
     return customerId ? orders.filter((order) => order.customerId === customerId) : orders;
+  },
+
+  listForSeller(sellerId: string): Order[] {
+    return readOrders().filter((order) => order.items.some((item) => item.sellerId === sellerId));
   },
 
   getById(id: string): Order | null {
