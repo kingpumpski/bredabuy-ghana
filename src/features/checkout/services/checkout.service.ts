@@ -21,7 +21,30 @@ export interface CheckoutResult {
 }
 
 export const checkoutService = {
-  submit(payload: CheckoutPayload): CheckoutResult {
+  async submit(payload: CheckoutPayload): Promise<CheckoutResult> {
+    const reservationItems = payload.items.map((item) => ({
+      productId: item.productId,
+      variantId: item.variantId,
+      sku: item.sku,
+      quantity: item.quantity,
+    }));
+
+    // Reserve stock before creating the order. This prevents a checkout from
+    // succeeding for a variant that has become unavailable since it was added
+    // to the cart. The production API should perform this atomically in a DB
+    // transaction with row-level locking.
+    const reservationPreview = await inventoryService.ensureRecords(reservationItems);
+    for (const item of reservationItems) {
+      const record = reservationPreview.find(
+        (entry) =>
+          entry.productId === item.productId &&
+          entry.variantId === item.variantId,
+      );
+      if (!record || record.available < item.quantity) {
+        throw new Error(`Insufficient stock for ${item.sku}. Available: ${record?.available ?? 0}.`);
+      }
+    }
+
     const order = orderService.create({
       customerId: payload.customerId,
       items: payload.items,
@@ -35,16 +58,7 @@ export const checkoutService = {
     });
 
     try {
-      const reservation = inventoryService.reserve(
-        order.id,
-        payload.items.map((item) => ({
-          productId: item.productId,
-          variantId: item.variantId,
-          sku: item.sku,
-          quantity: item.quantity,
-        })),
-      );
-
+      const reservation = await inventoryService.reserve(order.id, reservationItems);
       const sellerOrders = sellerOrderService.createFromOrder(order);
       return { order, reservationId: reservation.id, sellerOrders };
     } catch (error) {
