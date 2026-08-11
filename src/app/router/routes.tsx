@@ -52,6 +52,7 @@ const accountRoutes: RouteObject[] = [
   { path: "/account/profile", ...lazy(() => import("@/features/account/pages/AccountProfilePage")) },
   { path: "/account/orders", ...lazy(() => import("@/features/account/pages/AccountOrdersPage")) },
   { path: "/account/orders/:id", ...lazy(() => import("@/features/account/pages/AccountOrderDetailsPage")) },
+  { path: "/account/orders/:id/return", ...lazy(() => import("@/features/account/pages/AccountReturnRequestPage")) },
   { path: "/account/wishlist", ...lazy(() => import("@/features/account/pages/AccountWishlistPage")) },
   { path: "/account/addresses", ...lazy(() => import("@/features/account/pages/AccountAddressesPage")) },
   { path: "/account/notifications", ...lazy(() => import("@/features/account/pages/AccountNotificationsPage")) },
