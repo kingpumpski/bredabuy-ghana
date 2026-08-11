@@ -3,86 +3,95 @@ import {
   Heart,
   Minus,
   Plus,
+  Share2,
   ShoppingCart,
   Star,
 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Helmet } from "react-helmet-async";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
-import {
-  Link,
-  useNavigate,
-  useParams,
-} from "react-router-dom";
-
-import {
-  useState,
-} from "react";
-
-import {
-  Badge,
-} from "@/components/ui/badge";
-
-import {
-  Button,
-} from "@/components/ui/button";
-
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
-
-import {
-  Skeleton,
-} from "@/components/ui/skeleton";
-
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import ProductCard from "@/components/product/ProductCard";
+import { useCart } from "@/context/CartContext";
 
-import {
-  useCart,
-} from "@/context/CartContext";
+import { useProduct } from "../hooks/useProducts";
+import { productService } from "../services/product.service";
+import type { Product } from "../types/product.types";
 
-import {
-  useProduct,
-} from "../hooks/useProducts";
+const RECENTLY_VIEWED_KEY = "bredabuy:recently-viewed";
+const MAX_RECENTLY_VIEWED = 6;
 
-import {
-  productService,
-} from "../services/product.service";
+function readRecentlyViewed(): Product[] {
+  try {
+    const value = localStorage.getItem(RECENTLY_VIEWED_KEY);
+    return value ? (JSON.parse(value) as Product[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveRecentlyViewed(product: Product) {
+  try {
+    const existing = readRecentlyViewed().filter((item) => item.id !== product.id);
+    localStorage.setItem(
+      RECENTLY_VIEWED_KEY,
+      JSON.stringify([product, ...existing].slice(0, MAX_RECENTLY_VIEWED)),
+    );
+  } catch {
+    // Local storage is optional; product browsing must continue if unavailable.
+  }
+}
 
 const ProductDetailsPage = () => {
   const { id } = useParams();
-
   const navigate = useNavigate();
+  const { data: product, isLoading, isError } = useProduct(id);
+  const { addToCart } = useCart();
 
-  const {
-    data: product,
-    isLoading,
-    isError,
-  } = useProduct(id);
+  const [quantity, setQuantity] = useState(1);
+  const [selectedImage, setSelectedImage] = useState(0);
+  const [selectedVariant, setSelectedVariant] = useState<string | undefined>();
+  const [isWishlisted, setIsWishlisted] = useState(false);
+  const [related, setRelated] = useState<Product[]>([]);
+  const [recentlyViewed, setRecentlyViewed] = useState<Product[]>([]);
+  const [shareMessage, setShareMessage] = useState("");
 
-  const {
-    addToCart,
-  } = useCart();
+  useEffect(() => {
+    if (!product) return;
 
-  const [
-    quantity,
-    setQuantity,
-  ] = useState(1);
+    saveRecentlyViewed(product);
+    setRecentlyViewed(readRecentlyViewed().filter((item) => item.id !== product.id));
 
-  const [
-    selectedImage,
-    setSelectedImage,
-  ] = useState(0);
+    let active = true;
+    productService.getRelatedProducts(product).then((items) => {
+      if (active) setRelated(items);
+    });
 
-  const [
-    isWishlisted,
-    setIsWishlisted,
-  ] = useState(false);
+    return () => {
+      active = false;
+    };
+  }, [product]);
+
+  useEffect(() => {
+    setQuantity(1);
+    setSelectedImage(0);
+    setSelectedVariant(product?.variants?.[0]?.id);
+  }, [product?.id]);
+
+  const variant = useMemo(
+    () => product?.variants?.find((item) => item.id === selectedVariant),
+    [product, selectedVariant],
+  );
 
   if (isLoading) {
     return (
       <main className="container mx-auto px-4 py-12">
         <div className="grid gap-10 lg:grid-cols-2">
-          <Skeleton className="aspect-square w-full" />
+          <Skeleton className="aspect-square w-full rounded-2xl" />
           <div className="space-y-5">
             <Skeleton className="h-10 w-3/4" />
             <Skeleton className="h-6 w-1/4" />
@@ -97,375 +106,242 @@ const ProductDetailsPage = () => {
   if (isError || !product) {
     return (
       <main className="container mx-auto px-4 py-20 text-center">
-        <h1 className="text-3xl font-bold">
-          Product not found
-        </h1>
-
+        <h1 className="text-3xl font-bold">Product not found</h1>
         <p className="mt-3 text-muted-foreground">
-          The product you're looking for
-          doesn't exist or is no longer available.
+          The product you&apos;re looking for doesn&apos;t exist or is no longer available.
         </p>
-
-        <Button
-          className="mt-6"
-          onClick={() =>
-            navigate("/shop")
-          }
-        >
+        <Button className="mt-6" onClick={() => navigate("/products")}>
           Browse Products
         </Button>
       </main>
     );
   }
 
-  const image =
-    product.images?.[selectedImage]?.url;
+  const images = product.images ?? [];
+  const image = images[selectedImage]?.url;
+  const effectivePrice = variant?.price ?? product.price;
+  const effectiveStock = variant?.stock ?? product.stock;
+  const effectiveCompareAtPrice = variant?.compareAtPrice ?? product.compareAtPrice;
+  const hasVariants = Boolean(product.variants?.length);
 
   const handleAddToCart = () => {
     addToCart(product, quantity);
   };
 
+  const handleShare = async () => {
+    const shareData = {
+      title: product.name,
+      text: product.shortDescription || product.description,
+      url: window.location.href,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        setShareMessage("Link copied");
+        window.setTimeout(() => setShareMessage(""), 1800);
+      }
+    } catch {
+      // Sharing can be cancelled by the user; no error state is required.
+    }
+  };
+
   return (
-    <main className="container mx-auto px-4 py-8">
+    <>
+      <Helmet>
+        <title>{product.name} | BredaBuy Ghana</title>
+        <meta name="description" content={product.shortDescription || product.description} />
+      </Helmet>
 
-      <Link
-        to="/shop"
-        className="mb-8 inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="mr-2 h-4 w-4" />
-        Back to shop
-      </Link>
+      <main className="container mx-auto px-4 py-8">
+        <nav className="mb-6 flex flex-wrap items-center gap-2 text-sm text-muted-foreground" aria-label="Breadcrumb">
+          <Link to="/" className="hover:text-foreground">Home</Link>
+          <span>/</span>
+          <Link to="/products" className="hover:text-foreground">Products</Link>
+          <span>/</span>
+          <Link to={`/products?category=${encodeURIComponent(product.categoryId)}`} className="hover:text-foreground">
+            {product.categoryName}
+          </Link>
+          {product.brandName && (
+            <>
+              <span>/</span>
+              <Link to={`/products?brand=${encodeURIComponent(product.brandId || product.brandName)}`} className="hover:text-foreground">
+                {product.brandName}
+              </Link>
+            </>
+          )}
+        </nav>
 
-      <div className="grid gap-10 lg:grid-cols-2">
+        <Link to="/products" className="mb-8 inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to products
+        </Link>
 
-        <section>
+        <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr]">
+          <section>
+            <div className="overflow-hidden rounded-2xl border bg-muted/20 shadow-soft">
+              {image ? (
+                <img src={image} alt={product.name} className="aspect-square w-full object-cover" />
+              ) : (
+                <div className="flex aspect-square items-center justify-center text-muted-foreground">
+                  No image available
+                </div>
+              )}
+            </div>
 
-          <div className="overflow-hidden rounded-xl border bg-muted/20">
-            {image ? (
-              <img
-                src={image}
-                alt={product.name}
-                className="aspect-square w-full object-cover"
-              />
-            ) : (
-              <div className="flex aspect-square items-center justify-center">
-                No image available
-              </div>
-            )}
-          </div>
-
-          {product.images?.length > 1 && (
-            <div className="mt-4 grid grid-cols-5 gap-3">
-
-              {product.images.map(
-                (item, index) => (
+            {images.length > 1 && (
+              <div className="mt-4 grid grid-cols-5 gap-3">
+                {images.map((item, index) => (
                   <button
                     key={item.id}
-                    onClick={() =>
-                      setSelectedImage(index)
-                    }
-                    className={`overflow-hidden rounded-lg border ${
-                      selectedImage === index
-                        ? "ring-2 ring-primary"
-                        : ""
-                    }`}
+                    type="button"
+                    onClick={() => setSelectedImage(index)}
+                    className={`overflow-hidden rounded-lg border ${selectedImage === index ? "ring-2 ring-primary" : ""}`}
+                    aria-label={`View product image ${index + 1}`}
                   >
-                    <img
-                      src={item.url}
-                      alt={item.alt}
-                      className="aspect-square w-full object-cover"
-                    />
+                    <img src={item.url} alt={item.alt || product.name} className="aspect-square w-full object-cover" />
                   </button>
-                )
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section>
+            <div className="flex flex-wrap gap-2">
+              {product.isNew && <Badge>New</Badge>}
+              {product.isOnSale && <Badge variant="destructive">Sale</Badge>}
+              <Badge variant="secondary">{product.categoryName}</Badge>
+              {product.brandName && <Badge variant="outline">{product.brandName}</Badge>}
+            </div>
+
+            <h1 className="mt-4 text-3xl font-bold tracking-tight md:text-4xl">{product.name}</h1>
+
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <div className="flex items-center">
+                <Star className="mr-1 h-4 w-4 fill-current" />
+                <span className="font-medium">{product.rating?.average ?? 0}</span>
+              </div>
+              <span className="text-sm text-muted-foreground">{product.rating?.count ?? 0} reviews</span>
+              <span className="text-sm text-muted-foreground">SKU: {product.sku}</span>
+            </div>
+
+            <div className="mt-6 flex items-end gap-3">
+              <span className="text-3xl font-bold">GH₵ {Number(effectivePrice).toLocaleString()}</span>
+              {effectiveCompareAtPrice && (
+                <span className="pb-1 text-lg text-muted-foreground line-through">
+                  GH₵ {Number(effectiveCompareAtPrice).toLocaleString()}
+                </span>
               )}
-
-            </div>
-          )}
-
-        </section>
-
-        <section>
-
-          <div className="flex flex-wrap gap-2">
-            {product.isNew && (
-              <Badge>New</Badge>
-            )}
-
-            {product.isOnSale && (
-              <Badge variant="destructive">
-                Sale
-              </Badge>
-            )}
-
-            {product.categoryName && (
-              <Badge variant="secondary">
-                {product.categoryName}
-              </Badge>
-            )}
-          </div>
-
-          <h1 className="mt-4 text-3xl font-bold tracking-tight md:text-4xl">
-            {product.name}
-          </h1>
-
-          <div className="mt-4 flex items-center gap-3">
-
-            <div className="flex items-center">
-              <Star className="mr-1 h-4 w-4 fill-current" />
-
-              <span className="font-medium">
-                {product.rating?.average ??
-                  0}
-              </span>
             </div>
 
-            <span className="text-sm text-muted-foreground">
-              {product.rating?.count ??
-                0} reviews
-            </span>
+            <p className="mt-6 leading-7 text-muted-foreground">{product.description}</p>
 
-            {product.brandName && (
-              <span className="text-sm text-muted-foreground">
-                Brand:{" "}
-                {product.brandName}
-              </span>
+            {hasVariants && (
+              <div className="mt-6">
+                <p className="mb-3 text-sm font-semibold">Choose an option</p>
+                <div className="flex flex-wrap gap-2">
+                  {product.variants!.map((item) => (
+                    <Button
+                      key={item.id}
+                      type="button"
+                      variant={selectedVariant === item.id ? "default" : "outline"}
+                      disabled={item.stock <= 0}
+                      onClick={() => setSelectedVariant(item.id)}
+                    >
+                      {item.name}
+                    </Button>
+                  ))}
+                </div>
+              </div>
             )}
 
-          </div>
+            <div className="mt-6 rounded-xl border p-4">
+              <p className="text-sm text-muted-foreground">Availability</p>
+              <p className={effectiveStock > 0 ? "mt-1 font-medium text-green-600" : "mt-1 font-medium text-destructive"}>
+                {effectiveStock > 0 ? `${effectiveStock} available` : "Out of stock"}
+              </p>
+            </div>
 
-          <div className="mt-6 flex items-end gap-3">
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+              <div className="flex items-center rounded-lg border">
+                <Button variant="ghost" size="icon" disabled={quantity <= 1} onClick={() => setQuantity((value) => Math.max(1, value - 1))}>
+                  <Minus className="h-4 w-4" />
+                </Button>
+                <span className="w-10 text-center">{quantity}</span>
+                <Button variant="ghost" size="icon" disabled={quantity >= effectiveStock} onClick={() => setQuantity((value) => Math.min(effectiveStock, value + 1))}>
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
 
-            <span className="text-3xl font-bold">
-              GH₵{" "}
-              {Number(
-                product.price
-              ).toLocaleString()}
-            </span>
-
-            {product.compareAtPrice && (
-              <span className="pb-1 text-lg text-muted-foreground line-through">
-                GH₵{" "}
-                {Number(
-                  product.compareAtPrice
-                ).toLocaleString()}
-              </span>
-            )}
-
-          </div>
-
-          <p className="mt-6 leading-7 text-muted-foreground">
-            {product.description}
-          </p>
-
-          <div className="mt-6 rounded-lg border p-4">
-            <p className="text-sm">
-              Availability
-            </p>
-
-            <p
-              className={
-                product.stock > 0
-                  ? "mt-1 font-medium text-green-600"
-                  : "mt-1 font-medium text-destructive"
-              }
-            >
-              {product.stock > 0
-                ? `${product.stock} available`
-                : "Out of stock"}
-            </p>
-          </div>
-
-          <div className="mt-6 flex flex-wrap items-center gap-3">
-
-            <div className="flex items-center rounded-lg border">
-
-              <Button
-                variant="ghost"
-                size="icon"
-                disabled={quantity <= 1}
-                onClick={() =>
-                  setQuantity(
-                    Math.max(
-                      1,
-                      quantity - 1
-                    )
-                  )
-                }
-              >
-                <Minus className="h-4 w-4" />
+              <Button size="lg" disabled={effectiveStock <= 0} onClick={handleAddToCart} className="flex-1 sm:flex-none">
+                <ShoppingCart className="mr-2 h-5 w-5" />
+                Add to Cart
               </Button>
 
-              <span className="w-10 text-center">
-                {quantity}
-              </span>
-
-              <Button
-                variant="ghost"
-                size="icon"
-                disabled={
-                  quantity >= product.stock
-                }
-                onClick={() =>
-                  setQuantity(
-                    Math.min(
-                      product.stock,
-                      quantity + 1
-                    )
-                  )
-                }
-              >
-                <Plus className="h-4 w-4" />
+              <Button variant={isWishlisted ? "default" : "outline"} size="icon" onClick={() => setIsWishlisted((value) => !value)} aria-label="Add to wishlist">
+                <Heart className={`h-5 w-5 ${isWishlisted ? "fill-current" : ""}`} />
               </Button>
 
+              <Button variant="outline" size="icon" onClick={handleShare} aria-label="Share product">
+                <Share2 className="h-5 w-5" />
+              </Button>
             </div>
+            {shareMessage && <p className="mt-2 text-sm text-muted-foreground">{shareMessage}</p>}
 
-            <Button
-              size="lg"
-              disabled={
-                product.stock <= 0
-              }
-              onClick={
-                handleAddToCart
-              }
-              className="flex-1 sm:flex-none"
-            >
-              <ShoppingCart className="mr-2 h-5 w-5" />
-              Add to Cart
-            </Button>
+            {product.sellerName && (
+              <Card className="mt-8">
+                <CardContent className="p-5">
+                  <p className="text-sm text-muted-foreground">Sold by</p>
+                  <p className="mt-1 font-semibold">{product.sellerName}</p>
+                </CardContent>
+              </Card>
+            )}
+          </section>
+        </div>
 
-            <Button
-              variant={
-                isWishlisted
-                  ? "default"
-                  : "outline"
-              }
-              size="icon"
-              onClick={() =>
-                setIsWishlisted(
-                  !isWishlisted
-                )
-              }
-              aria-label="Add to wishlist"
-            >
-              <Heart
-                className={`h-5 w-5 ${
-                  isWishlisted
-                    ? "fill-current"
-                    : ""
-                }`}
-              />
-            </Button>
-
-          </div>
-
-          {product.sellerName && (
-            <Card className="mt-8">
-              <CardContent className="p-5">
-                <p className="text-sm text-muted-foreground">
-                  Sold by
-                </p>
-
-                <p className="mt-1 font-semibold">
-                  {product.sellerName}
-                </p>
-              </CardContent>
-            </Card>
-          )}
-
-        </section>
-
-      </div>
-
-      {product.specifications &&
-        Object.keys(
-          product.specifications
-        ).length > 0 && (
+        {product.specifications && Object.keys(product.specifications).length > 0 && (
           <section className="mt-16">
-
-            <h2 className="text-2xl font-bold">
-              Specifications
-            </h2>
-
+            <h2 className="text-2xl font-bold">Specifications</h2>
             <div className="mt-5 overflow-hidden rounded-xl border">
-
-              {Object.entries(
-                product.specifications
-              ).map(
-                ([key, value]) => (
-                  <div
-                    key={key}
-                    className="grid grid-cols-2 border-b p-4 last:border-0"
-                  >
-                    <span className="font-medium">
-                      {key}
-                    </span>
-
-                    <span className="text-muted-foreground">
-                      {value}
-                    </span>
-                  </div>
-                )
-              )}
-
+              {Object.entries(product.specifications).map(([key, value]) => (
+                <div key={key} className="grid grid-cols-1 gap-2 border-b p-4 last:border-0 sm:grid-cols-2">
+                  <span className="font-medium">{key}</span>
+                  <span className="text-muted-foreground">{value}</span>
+                </div>
+              ))}
             </div>
-
           </section>
         )}
 
-      <RelatedProducts
-        product={product}
-      />
-
-    </main>
-  );
-};
-
-// const RelatedProducts = ({
-//   product,
-// }: {
-//   product: any;
-// }) => {
-//   const [
-//     related,
-//     setRelated,
-//   ] = useState<any[]>([]);
-
-  const RelatedProducts = ({
-    product,
-  }: {
-    product: Product;
-  }) => {
-    const [related, setRelated] = useState<Product[]>([]);
-
-  useState(() => {
-    productService
-      .getRelatedProducts(product)
-      .then(setRelated);
-  });
-
-  if (!related.length) {
-    return null;
-  }
-
-  return (
-    <section className="mt-16">
-
-      <h2 className="text-2xl font-bold">
-        You May Also Like
-      </h2>
-
-      <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-        {related.map(
-          (item) => (
-            <ProductCard
-              key={item.id}
-              product={item}
-            />
-          )
+        {related.length > 0 && (
+          <section className="mt-16">
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-bold">You May Also Like</h2>
+                <p className="mt-1 text-muted-foreground">More products from the same category.</p>
+              </div>
+              <Link to={`/products?category=${encodeURIComponent(product.categoryId)}`} className="text-sm font-semibold hover:underline">
+                View category
+              </Link>
+            </div>
+            <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+              {related.map((item) => <ProductCard key={item.id} product={item} />)}
+            </div>
+          </section>
         )}
-      </div>
 
-    </section>
+        {recentlyViewed.length > 0 && (
+          <section className="mt-16">
+            <h2 className="text-2xl font-bold">Recently Viewed</h2>
+            <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+              {recentlyViewed.slice(0, 4).map((item) => <ProductCard key={item.id} product={item} />)}
+            </div>
+          </section>
+        )}
+      </main>
+    </>
   );
 };
 
