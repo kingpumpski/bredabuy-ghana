@@ -21,6 +21,13 @@ import { useCart } from "@/context/CartContext";
 import { useProduct } from "../hooks/useProducts";
 import { productService } from "../services/product.service";
 import type { Product } from "../types/product.types";
+import {
+  findVariantForSelection,
+  getVariantOptionGroups,
+  getVariantSelectionLabel,
+  isVariantOptionAvailable,
+  type VariantSelection,
+} from "../utils/variant.utils";
 
 const RECENTLY_VIEWED_KEY = "bredabuy:recently-viewed";
 const MAX_RECENTLY_VIEWED = 6;
@@ -54,13 +61,14 @@ const ProductDetailsPage = () => {
 
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
-  const [selectedVariant, setSelectedVariant] = useState<string | undefined>();
+  const [selection, setSelection] = useState<VariantSelection>({});
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [related, setRelated] = useState<Product[]>([]);
   const [recentlyViewed, setRecentlyViewed] = useState<Product[]>([]);
   const [shareMessage, setShareMessage] = useState("");
 
-  const variants = product?.variants;
+  const variants = product?.variants ?? [];
+  const optionGroups = useMemo(() => getVariantOptionGroups(variants), [variants]);
 
   useEffect(() => {
     if (!product) return;
@@ -79,15 +87,70 @@ const ProductDetailsPage = () => {
   }, [product]);
 
   useEffect(() => {
+    if (!variants.length) {
+      setSelection({});
+      setQuantity(1);
+      return;
+    }
+
+    const firstAvailable = variants.find((item) => item.stock > 0) ?? variants[0];
+    setSelection({ ...(firstAvailable?.attributes ?? {}) });
     setQuantity(1);
     setSelectedImage(0);
-    setSelectedVariant(variants?.[0]?.id);
   }, [product?.id, variants]);
 
   const variant = useMemo(
-    () => variants?.find((item) => item.id === selectedVariant),
-    [variants, selectedVariant],
+    () => findVariantForSelection(variants, selection),
+    [variants, selection],
   );
+
+  const images = product?.images ?? [];
+  const variantImageIndex = variant?.image
+    ? images.findIndex((item) => item.url === variant.image)
+    : -1;
+  const image = variant?.image ?? images[selectedImage]?.url;
+  const effectivePrice = variant?.price ?? product?.price ?? 0;
+  const effectiveStock = variant?.stock ?? product?.stock ?? 0;
+  const effectiveCompareAtPrice = variant?.compareAtPrice ?? product?.compareAtPrice;
+  const hasVariants = variants.length > 0;
+  const isCompleteSelection = !hasVariants || Boolean(variant);
+
+  useEffect(() => {
+    if (variantImageIndex >= 0) setSelectedImage(variantImageIndex);
+  }, [variantImageIndex]);
+
+  useEffect(() => {
+    setQuantity((current) => Math.max(1, Math.min(current, effectiveStock || 1)));
+  }, [effectiveStock]);
+
+  const handleSelectOption = (name: string, value: string) => {
+    setSelection((current) => ({ ...current, [name]: value }));
+  };
+
+  const handleAddToCart = () => {
+    if (hasVariants && !variant) return;
+    addToCart(product, quantity, variant);
+  };
+
+  const handleShare = async () => {
+    const shareData = {
+      title: product.name,
+      text: product.shortDescription || product.description,
+      url: window.location.href,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        setShareMessage("Link copied");
+        window.setTimeout(() => setShareMessage(""), 1800);
+      }
+    } catch {
+      // Sharing can be cancelled by the user.
+    }
+  };
 
   if (isLoading) {
     return (
@@ -118,35 +181,6 @@ const ProductDetailsPage = () => {
       </main>
     );
   }
-
-  const images = product.images ?? [];
-  const image = images[selectedImage]?.url;
-  const effectivePrice = variant?.price ?? product.price;
-  const effectiveStock = variant?.stock ?? product.stock;
-  const effectiveCompareAtPrice = variant?.compareAtPrice ?? product.compareAtPrice;
-  const hasVariants = Boolean(variants?.length);
-
-  const handleAddToCart = () => addToCart(product, quantity);
-
-  const handleShare = async () => {
-    const shareData = {
-      title: product.name,
-      text: product.shortDescription || product.description,
-      url: window.location.href,
-    };
-
-    try {
-      if (navigator.share) {
-        await navigator.share(shareData);
-      } else {
-        await navigator.clipboard.writeText(window.location.href);
-        setShareMessage("Link copied");
-        window.setTimeout(() => setShareMessage(""), 1800);
-      }
-    } catch {
-      // Sharing can be cancelled by the user.
-    }
-  };
 
   return (
     <>
@@ -239,7 +273,7 @@ const ProductDetailsPage = () => {
                 <span className="font-medium">{product.rating?.average ?? 0}</span>
               </div>
               <span className="text-sm text-muted-foreground">{product.rating?.count ?? 0} reviews</span>
-              <span className="text-sm text-muted-foreground">SKU: {product.sku}</span>
+              <span className="text-sm text-muted-foreground">SKU: {variant?.sku ?? product.sku}</span>
             </div>
 
             <div className="mt-6 flex items-end gap-3">
@@ -252,20 +286,66 @@ const ProductDetailsPage = () => {
             <p className="mt-6 leading-7 text-muted-foreground">{product.description}</p>
 
             {hasVariants && (
-              <div className="mt-6">
-                <p className="mb-3 text-sm font-semibold">Choose an option</p>
-                <div className="flex flex-wrap gap-2">
-                  {variants!.map((item) => (
-                    <Button
-                      key={item.id}
-                      type="button"
-                      variant={selectedVariant === item.id ? "default" : "outline"}
-                      disabled={item.stock <= 0}
-                      onClick={() => setSelectedVariant(item.id)}
-                    >
-                      {item.name}
-                    </Button>
-                  ))}
+              <div className="mt-7 space-y-6 rounded-2xl border bg-card p-5">
+                <div>
+                  <p className="text-sm font-semibold">Configure your product</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Choose the options you want. Unavailable combinations are automatically disabled.
+                  </p>
+                </div>
+
+                {optionGroups.map((group) => (
+                  <div key={group.name}>
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <p className="text-sm font-semibold">{group.name}</p>
+                      {selection[group.name] && (
+                        <span className="text-xs text-muted-foreground">Selected: {selection[group.name]}</span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {group.values.map((value) => {
+                        const available = isVariantOptionAvailable(
+                          variants,
+                          selection,
+                          group.name,
+                          value,
+                        );
+                        const selected = selection[group.name] === value;
+
+                        return (
+                          <Button
+                            key={`${group.name}-${value}`}
+                            type="button"
+                            variant={selected ? "default" : "outline"}
+                            disabled={!available}
+                            onClick={() => handleSelectOption(group.name, value)}
+                            className={!available ? "cursor-not-allowed opacity-50 line-through" : ""}
+                            title={!available ? `${value} is unavailable with the current selection` : undefined}
+                          >
+                            {value}
+                            {!available && <span className="ml-1 text-[10px]">Out of stock</span>}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+
+                <div className="rounded-xl bg-muted/50 p-4">
+                  {variant ? (
+                    <>
+                      <p className="text-sm font-semibold">Selected configuration</p>
+                      <p className="mt-1 text-sm text-muted-foreground">{getVariantSelectionLabel(variant)}</p>
+                      <div className="mt-3 flex flex-wrap gap-3 text-xs text-muted-foreground">
+                        <span>SKU: {variant.sku}</span>
+                        <span>{variant.stock > 0 ? `${variant.stock} available` : "Out of stock"}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-sm text-amber-700 dark:text-amber-300">
+                      Select an available combination to continue.
+                    </p>
+                  )}
                 </div>
               </div>
             )}
@@ -288,7 +368,12 @@ const ProductDetailsPage = () => {
                 </Button>
               </div>
 
-              <Button size="lg" disabled={effectiveStock <= 0} onClick={handleAddToCart} className="flex-1 sm:flex-none">
+              <Button
+                size="lg"
+                disabled={effectiveStock <= 0 || !isCompleteSelection}
+                onClick={handleAddToCart}
+                className="flex-1 sm:flex-none"
+              >
                 <ShoppingCart className="mr-2 h-5 w-5" />
                 Add to Cart
               </Button>
@@ -300,6 +385,10 @@ const ProductDetailsPage = () => {
               </Button>
             </div>
             {shareMessage && <p className="mt-2 text-sm text-muted-foreground">{shareMessage}</p>}
+
+            <p className="mt-3 text-xs text-muted-foreground">
+              You can change the configuration and add another combination without leaving this product page.
+            </p>
 
             {product.sellerName && (
               <Card className="mt-8">
