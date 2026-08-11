@@ -84,6 +84,7 @@ const adminRoutes: RouteObject[] = [
   { path: "/admin/customers", ...lazy(() => import("@/features/admin/pages/CustomerManagement")) },
   { path: "/admin/inventory", ...lazy(() => import("@/features/admin/pages/InventoryManagement")) },
   { path: "/admin/orders", ...lazy(() => import("@/features/admin/pages/OrderManagement")) },
+  { path: "/admin/returns", ...lazy(() => import("@/features/admin/pages/ReturnManagement")) },
   { path: "/admin/sellers", ...lazy(() => import("@/features/admin/pages/SellerManagement")) },
   { path: "/admin/warehouses", ...lazy(() => import("@/features/admin/pages/WarehouseManagement")) },
   { path: "/admin/logistics", ...lazy(() => import("@/features/admin/pages/LogisticsManagement")) },
