@@ -82,6 +82,12 @@ const ProductCataloguePage = () => {
     setSearchParams,
   ] = useSearchParams();
 
+  // Use the serialized query string as the synchronization key. React Router
+  // can provide a new URLSearchParams object without the URL actually changing.
+  // Depending on the object itself here can repeatedly hydrate the store and
+  // make the catalogue appear to refresh while the user is searching.
+  const queryString = searchParams.toString();
+
   const [
     search,
     setSearch,
@@ -122,41 +128,41 @@ const ProductCataloguePage = () => {
   } = useProducts();
 
   useEffect(() => {
+    const params = new URLSearchParams(queryString);
+
     const nextFilters: ProductFiltersType = {
       search:
-        searchParams.get("q") ??
+        params.get("q") ??
         undefined,
       category:
-        searchParams.get("category") ??
+        params.get("category") ??
         undefined,
       brand:
-        searchParams.get("brand") ??
+        params.get("brand") ??
         undefined,
       minPrice: parseNumber(
-        searchParams.get("minPrice")
+        params.get("minPrice")
       ),
       maxPrice: parseNumber(
-        searchParams.get("maxPrice")
+        params.get("maxPrice")
       ),
       rating: parseNumber(
-        searchParams.get("rating")
+        params.get("rating")
       ),
-      inStock: searchParams.has(
-        "inStock"
-      )
+      inStock: params.has("inStock")
         ? parseBoolean(
-            searchParams.get("inStock")
+            params.get("inStock")
           )
         : undefined,
-      onSale: searchParams.has("onSale")
+      onSale: params.has("onSale")
         ? parseBoolean(
-            searchParams.get("onSale")
+            params.get("onSale")
           )
         : undefined,
     };
 
     const nextSortValue =
-      searchParams.get("sort");
+      params.get("sort");
 
     const nextSort: ProductSortType =
       PRODUCT_SORTS.includes(
@@ -166,7 +172,7 @@ const ProductCataloguePage = () => {
         : "featured";
 
     const parsedPage = Number(
-      searchParams.get("page") ?? "1"
+      params.get("page") ?? "1"
     );
 
     const nextPage =
@@ -176,7 +182,7 @@ const ProductCataloguePage = () => {
         : 1;
 
     setSearch(
-      searchParams.get("q") ?? ""
+      params.get("q") ?? ""
     );
 
     hydrate(
@@ -185,7 +191,7 @@ const ProductCataloguePage = () => {
       nextPage
     );
   }, [
-    searchParams,
+    queryString,
     hydrate,
   ]);
 
@@ -256,7 +262,7 @@ const ProductCataloguePage = () => {
     const nextQuery =
       nextParams.toString();
     const currentQuery =
-      searchParams.toString();
+      queryString;
 
     if (nextQuery !== currentQuery) {
       setSearchParams(
@@ -268,7 +274,7 @@ const ProductCataloguePage = () => {
     filters,
     sort,
     page,
-    searchParams,
+    queryString,
     setSearchParams,
   ]);
 
