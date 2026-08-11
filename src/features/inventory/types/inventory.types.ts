@@ -7,13 +7,15 @@ export type InventoryMovementType =
   | "return";
 
 export interface InventoryRecord {
-  id: string;
+  id?: string;
   productId: string;
   variantId?: string;
   sku: string;
   onHand: number;
   reserved: number;
   available: number;
+  quarantined?: number;
+  damaged?: number;
   updatedAt: string;
 }
 
