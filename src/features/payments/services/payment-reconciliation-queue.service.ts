@@ -5,7 +5,9 @@ export type ReconciliationResolution = "confirmed" | "reversed" | "escalated";
 export interface ReconciliationResolutionRecord { id:string; reconciliationId:string; reference:string; resolution:ReconciliationResolution; note:string; resolvedBy:string; resolvedAt:string; }
 const KEY="bredabuy:payment:reconciliation-resolutions";
 const read=():ReconciliationResolutionRecord[]=>{try{return JSON.parse(localStorage.getItem(KEY)??"[]") as ReconciliationResolutionRecord[]}catch{return[]}};
-const write=(v:ReconciliationResolutionRecord[])=>{try{localStorage.setItem(KEY,JSON.stringify(v))}catch{}};
+const write=(v:ReconciliationResolutionRecord[])=>{try{localStorage.setItem(KEY,JSON.stringify(v))}catch {
+    /* Non-fatal local persistence failure. */
+  }};
 export const paymentReconciliationQueueService={
  getQueue(){return paymentReconciliationService.getUnresolved().filter(x=>!read().some(r=>r.reconciliationId===x.id&&r.resolution!=="escalated"))},
  resolve(input:{reconciliationId:string;resolution:ReconciliationResolution;note:string;resolvedBy:string}){

@@ -3,7 +3,9 @@ import walletService from "./wallet.service";
 export interface WalletPurchase { id:string; walletId:string; customerId:string; orderId:string; reference:string; amount:number; currency:"GHS"; status:"completed"|"failed"; transactionId?:string; createdAt:string; }
 const KEY="bredabuy:wallet:purchases";
 const read=():WalletPurchase[]=>{try{return JSON.parse(localStorage.getItem(KEY)??"[]") as WalletPurchase[]}catch{return[]}};
-const write=(v:WalletPurchase[])=>{try{localStorage.setItem(KEY,JSON.stringify(v))}catch{}};
+const write=(v:WalletPurchase[])=>{try{localStorage.setItem(KEY,JSON.stringify(v))}catch {
+    /* Non-fatal local persistence failure. */
+  }};
 export const walletPurchaseService={
  authorize(input:{customerId:string;orderId:string;amount:number;reference:string}){
   if(input.amount<=0)return null;

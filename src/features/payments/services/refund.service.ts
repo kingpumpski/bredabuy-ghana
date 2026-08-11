@@ -6,7 +6,9 @@ export type RefundDestination = "wallet" | "original-method";
 export interface Refund { id:string; orderId:string; returnId:string; amount:number; currency:"GHS"; destination:RefundDestination; status:RefundStatus; reason:string; createdAt:string; updatedAt:string; }
 const KEY="bredabuy:refunds";
 const read=():Refund[]=>{try{return JSON.parse(localStorage.getItem(KEY)??"[]") as Refund[]}catch{return[]}};
-const write=(v:Refund[])=>{try{localStorage.setItem(KEY,JSON.stringify(v))}catch{}};
+const write=(v:Refund[])=>{try{localStorage.setItem(KEY,JSON.stringify(v))}catch {
+    /* Non-fatal local persistence failure. */
+  }};
 export const refundService={
  list(orderId?:string){return read().filter(x=>!orderId||x.orderId===orderId)},
  request(input:{inspectionId:string;destination?:RefundDestination}){const inspection=returnInspectionService.list().find(x=>x.id===input.inspectionId);if(!inspection||!inspection.refundEligible||!inspection.refundAmount)return null;const returnRecord=returnShipmentService.list().find(x=>x.id===inspection.returnId);if(!returnRecord)return null;const now=new Date().toISOString();const refund:Refund={id:crypto.randomUUID(),orderId:returnRecord.orderId,returnId:returnRecord.id,amount:inspection.refundAmount,currency:"GHS",destination:input.destination??"wallet",status:"requested",reason:"Approved return inspection",createdAt:now,updatedAt:now};write([refund,...read()]);return refund;},

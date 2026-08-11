@@ -4,7 +4,9 @@ export type DeliveryExceptionReason = "recipient-unavailable" | "invalid-address
 export interface DeliveryException { id:string; shipmentId:string; reason:DeliveryExceptionReason; note:string; attempt:number; nextAction:"retry"|"return"; nextAttemptAt?:string; createdAt:string; resolvedAt?:string; }
 const KEY="bredabuy:delivery-exceptions";
 const read=():DeliveryException[]=>{try{return JSON.parse(localStorage.getItem(KEY)??"[]") as DeliveryException[]}catch{return[]}};
-const write=(v:DeliveryException[])=>{try{localStorage.setItem(KEY,JSON.stringify(v))}catch{}};
+const write=(v:DeliveryException[])=>{try{localStorage.setItem(KEY,JSON.stringify(v))}catch {
+    /* Non-fatal local persistence failure. */
+  }};
 export const deliveryExceptionService={
  list(shipmentId?:string){return read().filter(x=>!shipmentId||x.shipmentId===shipmentId)},
  record(input:Omit<DeliveryException,"id"|"attempt"|"createdAt"|"resolvedAt">){const shipment=shipmentService.getById(input.shipmentId);if(!shipment)return null;const item:DeliveryException={...input,id:crypto.randomUUID(),attempt:shipment.deliveryAttempts,createdAt:new Date().toISOString()};write([item,...read()]);shipmentService.recordDeliveryFailure(shipment.id,input.note);return item},

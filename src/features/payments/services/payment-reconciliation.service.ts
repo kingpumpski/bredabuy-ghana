@@ -4,7 +4,9 @@ export type ReconciliationResult = "matched" | "amount-mismatch" | "unknown-refe
 export interface ReconciliationRecord { id:string; reference:string; providerReference:string; result:ReconciliationResult; internalAmount:number; providerAmount:number; providerStatus:"successful"|"failed"|"cancelled"; note?:string; reconciledAt:string; }
 const KEY="bredabuy:payment:reconciliation";
 const read=():ReconciliationRecord[]=>{try{return JSON.parse(localStorage.getItem(KEY)??"[]") as ReconciliationRecord[]}catch{return[]}};
-const write=(v:ReconciliationRecord[])=>{try{localStorage.setItem(KEY,JSON.stringify(v))}catch{}};
+const write=(v:ReconciliationRecord[])=>{try{localStorage.setItem(KEY,JSON.stringify(v))}catch {
+    /* Non-fatal local persistence failure. */
+  }};
 export const paymentReconciliationService={
  reconcile(input:{reference:string;providerReference:string;providerAmount:number;providerStatus:"successful"|"failed"|"cancelled";note?:string}){
   const tx=paymentTransactionService.findByReference(input.reference);

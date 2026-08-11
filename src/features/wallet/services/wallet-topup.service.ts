@@ -5,7 +5,9 @@ export type WalletTopUpStatus = "created" | "awaiting-payment" | "confirmed" | "
 export interface WalletTopUpIntent { id:string; walletId:string; customerId:string; amount:number; currency:"GHS"; method:WalletTopUpMethod; status:WalletTopUpStatus; providerReference?:string; createdAt:string; updatedAt:string; }
 const KEY="bredabuy:wallet:topups";
 const read=():WalletTopUpIntent[]=>{try{return JSON.parse(localStorage.getItem(KEY)??"[]") as WalletTopUpIntent[]}catch{return[]}};
-const write=(v:WalletTopUpIntent[])=>{try{localStorage.setItem(KEY,JSON.stringify(v))}catch{}};
+const write=(v:WalletTopUpIntent[])=>{try{localStorage.setItem(KEY,JSON.stringify(v))}catch {
+    /* Non-fatal local persistence failure. */
+  }};
 export const walletTopUpService={
  create(input:{customerId:string;amount:number;method:WalletTopUpMethod}){if(input.amount<=0)return null;const wallet=walletService.getOrCreate(input.customerId);const now=new Date().toISOString();const intent:WalletTopUpIntent={id:crypto.randomUUID(),walletId:wallet.id,customerId:input.customerId,amount:input.amount,currency:"GHS",method:input.method,status:"awaiting-payment",createdAt:now,updatedAt:now};write([intent,...read()]);return intent},
  confirm(id:string,providerReference:string){const items=read();const index=items.findIndex(x=>x.id===id);if(index<0)return null;const intent=items[index];if(intent.status!=="awaiting-payment")return intent;const tx=walletService.record(intent.walletId,{type:"top-up",amount:intent.amount,description:`Wallet top-up via ${intent.method}`,status:"completed"});if(!tx)return null;const updated={...intent,status:"confirmed" as const,providerReference,updatedAt:new Date().toISOString()};items[index]=updated;write(items);return updated},

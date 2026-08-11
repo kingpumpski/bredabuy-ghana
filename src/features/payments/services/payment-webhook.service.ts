@@ -4,7 +4,9 @@ import orderPaymentSyncService from "./order-payment-sync.service";
 export interface PaymentWebhookEvent { eventId:string; reference:string; status:"successful"|"failed"|"cancelled"; providerReference?:string; amount?:number; receivedAt:string; }
 const KEY="bredabuy:payment:webhook-events";
 const read=():PaymentWebhookEvent[]=>{try{return JSON.parse(localStorage.getItem(KEY)??"[]") as PaymentWebhookEvent[]}catch{return[]}};
-const write=(v:PaymentWebhookEvent[])=>{try{localStorage.setItem(KEY,JSON.stringify(v))}catch{}};
+const write=(v:PaymentWebhookEvent[])=>{try{localStorage.setItem(KEY,JSON.stringify(v))}catch {
+    /* Non-fatal local persistence failure. */
+  }};
 export const paymentWebhookService={
  process(event:PaymentWebhookEvent){
   const seen=read().find(x=>x.eventId===event.eventId);if(seen)return {accepted:true,duplicate:true,transaction:paymentTransactionService.findByReference(event.reference)};

@@ -5,7 +5,9 @@ export type InventoryDisposition = "restock" | "quarantine" | "damaged" | "dispo
 export interface ReturnInspection { id:string; returnId:string; decision:InspectionDecision; disposition:InventoryDisposition; conditionNote:string; refundEligible:boolean; refundAmount?:number; inspectedBy?:string; inspectedAt:string; }
 const KEY="bredabuy:return-inspections";
 const read=():ReturnInspection[]=>{try{return JSON.parse(localStorage.getItem(KEY)??"[]") as ReturnInspection[]}catch{return[]}};
-const write=(v:ReturnInspection[])=>{try{localStorage.setItem(KEY,JSON.stringify(v))}catch{}};
+const write=(v:ReturnInspection[])=>{try{localStorage.setItem(KEY,JSON.stringify(v))}catch {
+    /* Non-fatal local persistence failure. */
+  }};
 export const returnInspectionService={
  list(returnId?:string){return read().filter(x=>!returnId||x.returnId===returnId)},
  inspect(input:Omit<ReturnInspection,"id"|"inspectedAt">){const request=returnShipmentService.list().find(x=>x.id===input.returnId);if(!request||request.status!=="received")return null;const item={...input,id:crypto.randomUUID(),inspectedAt:new Date().toISOString()};write([item,...read()]);return item},

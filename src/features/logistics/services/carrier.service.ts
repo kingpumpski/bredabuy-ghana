@@ -12,7 +12,7 @@ export interface Carrier {
 
 const KEY = "bredabuy:logistics:carriers";
 const read = (): Carrier[] => { try { return JSON.parse(localStorage.getItem(KEY) ?? "[]") as Carrier[]; } catch { return []; } };
-const write = (items: Carrier[]) => { try { localStorage.setItem(KEY, JSON.stringify(items)); } catch {} };
+const write = (items: Carrier[]) => { try { localStorage.setItem(KEY, JSON.stringify(items)); } catch { /* persistence failure is intentionally non-fatal */ } };
 
 export const carrierService = {
   list(activeOnly = false) { const items = read(); return activeOnly ? items.filter(item => item.active) : items; },

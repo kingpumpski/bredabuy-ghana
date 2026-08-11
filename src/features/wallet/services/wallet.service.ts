@@ -4,7 +4,9 @@ const ACCOUNT_KEY="bredabuy:wallet:accounts";
 const TX_KEY="bredabuy:wallet:transactions";
 const readAccounts=():WalletAccount[]=>{try{return JSON.parse(localStorage.getItem(ACCOUNT_KEY)??"[]") as WalletAccount[]}catch{return[]}};
 const readTx=():WalletTransaction[]=>{try{return JSON.parse(localStorage.getItem(TX_KEY)??"[]") as WalletTransaction[]}catch{return[]}};
-const write=(a:WalletAccount[],t:WalletTransaction[])=>{try{localStorage.setItem(ACCOUNT_KEY,JSON.stringify(a));localStorage.setItem(TX_KEY,JSON.stringify(t))}catch{}};
+const write=(a:WalletAccount[],t:WalletTransaction[])=>{try{localStorage.setItem(ACCOUNT_KEY,JSON.stringify(a));localStorage.setItem(TX_KEY,JSON.stringify(t))}catch {
+    /* Non-fatal local persistence failure. */
+  }};
 const reference=()=>`WAL-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0,8).toUpperCase()}`;
 export const walletService={
  getOrCreate(customerId:string){const accounts=readAccounts();const existing=accounts.find(x=>x.customerId===customerId);if(existing)return existing;const now=new Date().toISOString();const account:WalletAccount={id:crypto.randomUUID(),customerId,currency:"GHS",availableBalance:0,createdAt:now,updatedAt:now};write([account,...accounts],readTx());return account},
