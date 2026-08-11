@@ -1,7 +1,7 @@
 import type { CartTotals } from "@/features/cart/types/cart.types";
 import type { PaymentMethod } from "@/features/payments/types/payment.types";
 import type { CreateOrderPayload } from "@/features/orders/types/order.types";
-import type { ShippingAddress } from "@/features/shipping/types/shipping.types";
+import type { ShippingAddress, ShippingMethod } from "@/features/shipping/types/shipping.types";
 import inventoryService from "@/features/inventory/services/inventory.service";
 import orderService from "@/features/orders/services/order.service";
 import sellerOrderService from "@/features/orders/services/seller-order.service";
@@ -12,6 +12,7 @@ export interface CheckoutPayload {
   totals: CartTotals;
   paymentMethod: PaymentMethod;
   shippingAddress: ShippingAddress;
+  shippingMethod?: ShippingMethod;
 }
 
 export interface CheckoutResult {
@@ -55,6 +56,7 @@ export const checkoutService = {
       total: payload.totals.total,
       paymentMethod: payload.paymentMethod,
       shippingAddress: payload.shippingAddress,
+      shippingMethod: payload.shippingMethod,
     });
 
     try {
