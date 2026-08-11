@@ -32,6 +32,7 @@ const publicRoutes: RouteObject[] = [
   { path: "cart", ...lazy(() => import("@/pages/Cart")) },
   { path: "checkout", ...lazy(() => import("@/pages/Checkout")) },
   { path: "order-success", ...lazy(() => import("@/pages/OrderSuccess")) },
+  { path: "track-order", ...lazy(() => import("@/pages/TrackOrder")) },
   { path: "about", ...lazy(() => import("@/pages/About")) },
   { path: "contact", ...lazy(() => import("@/pages/Contact")) },
   { path: "unauthorized", ...lazy(() => import("@/pages/Unauthorized")) },
