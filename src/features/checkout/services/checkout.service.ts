@@ -14,27 +14,17 @@ export interface CheckoutPayload {
 }
 
 export const checkoutService = {
-  async submit(
-    payload: CheckoutPayload,
-  ) {
-    return orderService.createOrder({
-      customerId:
-        payload.customerId,
+  submit(payload: CheckoutPayload) {
+    return orderService.create({
+      customerId: payload.customerId,
       items: payload.items,
-      subtotal:
-        payload.totals.subtotal,
-      discount:
-        payload.totals.discount,
-      shipping:
-        payload.totals.shipping,
-      tax:
-        payload.totals.tax,
-      total:
-        payload.totals.total,
-      paymentMethod:
-        payload.paymentMethod,
-      shippingAddress:
-        payload.shippingAddress,
+      subtotal: payload.totals.subtotal,
+      discount: payload.totals.discount,
+      shipping: payload.totals.shipping,
+      tax: payload.totals.tax,
+      total: payload.totals.total,
+      paymentMethod: payload.paymentMethod,
+      shippingAddress: payload.shippingAddress,
     });
   },
 };
