@@ -1,87 +1,62 @@
-import type {
-  CreateOrderPayload,
-  Order,
-  OrderStatus,
-} from "../types/order.types";
+import type { CreateOrderPayload, Order } from "../types/order.types";
 
-const orders: Order[] = [];
+const STORAGE_KEY = "bredabuy:orders";
 
-function createOrderNumber(): string {
-  const timestamp =
-    Date.now().toString().slice(-8);
+const readOrders = (): Order[] => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as Order[]) : [];
+  } catch {
+    return [];
+  }
+};
 
-  return `BB-${timestamp}`;
-}
+const writeOrders = (orders: Order[]) => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
+  } catch {
+    // Persistence is optional until the production API is connected.
+  }
+};
+
+const makeOrderNumber = () =>
+  `BB-${new Date().getFullYear()}-${Date.now().toString(36).toUpperCase()}`;
 
 export const orderService = {
-  async createOrder(
-    payload: CreateOrderPayload,
-  ): Promise<Order> {
-    const now =
-      new Date().toISOString();
+  create(payload: CreateOrderPayload): Order {
+    const now = new Date().toISOString();
 
     const order: Order = {
       id: crypto.randomUUID(),
-      orderNumber: createOrderNumber(),
-      customerId: payload.customerId,
-      items: payload.items,
-      subtotal: payload.subtotal,
-      discount: payload.discount,
-      shipping: payload.shipping,
-      tax: payload.tax,
-      total: payload.total,
-      currency: "GHS",
+      orderNumber: makeOrderNumber(),
+      ...payload,
       status: "pending",
-      paymentMethod: payload.paymentMethod,
       paymentStatus: "pending",
-      shippingAddress:
-        payload.shippingAddress,
+      currency: "GHS",
       createdAt: now,
       updatedAt: now,
     };
 
-    orders.unshift(order);
+    writeOrders([order, ...readOrders()]);
 
     return order;
   },
 
-  async getOrders(
-    customerId: string,
-  ): Promise<Order[]> {
-    return orders.filter(
-      (order) =>
-        order.customerId === customerId,
-    );
+  list(customerId?: string): Order[] {
+    const orders = readOrders();
+
+    return customerId
+      ? orders.filter((order) => order.customerId === customerId)
+      : orders;
   },
 
-  async getOrder(
-    orderId: string,
-  ): Promise<Order | null> {
+  getById(id: string): Order | null {
+    return readOrders().find((order) => order.id === id) ?? null;
+  },
+
+  getByOrderNumber(orderNumber: string): Order | null {
     return (
-      orders.find(
-        (order) => order.id === orderId,
-      ) ?? null
+      readOrders().find((order) => order.orderNumber === orderNumber) ?? null
     );
-  },
-
-  async updateStatus(
-    orderId: string,
-    status: OrderStatus,
-  ): Promise<Order | null> {
-    const order = orders.find(
-      (item) => item.id === orderId,
-    );
-
-    if (!order) {
-      return null;
-    }
-
-    order.status = status;
-    order.updatedAt =
-      new Date().toISOString();
-
-    return order;
   },
 };
-
-export default orderService;
