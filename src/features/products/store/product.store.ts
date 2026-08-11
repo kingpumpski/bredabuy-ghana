@@ -35,6 +35,21 @@ interface ProductStore {
   ) => void;
 }
 
+const filtersEqual = (
+  first: ProductFilters,
+  second: ProductFilters,
+) =>
+  first.search === second.search &&
+  first.category === second.category &&
+  first.brand === second.brand &&
+  first.seller === second.seller &&
+  first.minPrice === second.minPrice &&
+  first.maxPrice === second.maxPrice &&
+  first.rating === second.rating &&
+  first.inStock === second.inStock &&
+  first.onSale === second.onSale &&
+  first.featured === second.featured;
+
 export const useProductStore =
   create<ProductStore>((set) => ({
     filters: {},
@@ -42,41 +57,66 @@ export const useProductStore =
     page: 1,
 
     setFilters: (filters) =>
-      set({
-        filters,
-        page: 1,
-      }),
+      set((state) =>
+        filtersEqual(state.filters, filters) && state.page === 1
+          ? state
+          : {
+              filters,
+              page: 1,
+            },
+      ),
 
     updateFilters: (filters) =>
-      set((state) => ({
-        filters: {
+      set((state) => {
+        const nextFilters = {
           ...state.filters,
           ...filters,
-        },
-        page: 1,
-      })),
+        };
+
+        return filtersEqual(state.filters, nextFilters) && state.page === 1
+          ? state
+          : {
+              filters: nextFilters,
+              page: 1,
+            };
+      }),
 
     clearFilters: () =>
-      set({
-        filters: {},
-        page: 1,
-      }),
+      set((state) =>
+        filtersEqual(state.filters, {}) && state.page === 1
+          ? state
+          : {
+              filters: {},
+              page: 1,
+            },
+      ),
 
     setSort: (sort) =>
-      set({
-        sort,
-        page: 1,
-      }),
+      set((state) =>
+        state.sort === sort && state.page === 1
+          ? state
+          : {
+              sort,
+              page: 1,
+            },
+      ),
 
     setPage: (page) =>
-      set({
-        page,
-      }),
+      set((state) => (state.page === page ? state : { page })),
 
+    // URL hydration happens whenever React Router reports a new query string.
+    // Returning the existing state when values are unchanged prevents needless
+    // renders and avoids catalogue query churn during search/filter navigation.
     hydrate: (filters, sort, page) =>
-      set({
-        filters,
-        sort,
-        page,
-      }),
+      set((state) =>
+        filtersEqual(state.filters, filters) &&
+        state.sort === sort &&
+        state.page === page
+          ? state
+          : {
+              filters,
+              sort,
+              page,
+            },
+      ),
   }));
