@@ -30,6 +30,14 @@ This pass reconciles the highest-confidence architecture conflicts found directl
    - `src/store/cart.store.ts` is explicitly retained as a compatibility layer but now uses the isolated `bredabuy-cart-legacy` storage key.
    - This prevents the legacy and canonical stores from overwriting or hydrating each other's incompatible persisted schemas.
 
+4. Canonicalized storefront route aliases.
+   - `/shop` is the canonical catalogue route.
+   - `/products` now redirects to `/shop` rather than mounting a second catalogue route.
+   - `/products/:id` is the canonical product-detail route.
+   - `/product/:id` is retained as a compatibility redirect to the canonical product-detail route.
+   - The duplicate top-level `/unauthorized` registration was removed because the public route tree already owns that path.
+   - Existing authentication, seller and admin guard boundaries were preserved.
+
 ## Provider Changes
 
 Current hierarchy is:
@@ -50,9 +58,13 @@ This preserves existing provider functionality while removing the duplicate Quer
 ## Route Changes
 
 - Removed the unused `src/app/router/AppRoutes.tsx` wrapper.
-- No route paths were intentionally removed.
-- `src/app/router/routes.tsx` remains the canonical route registry.
-- Existing public, customer, seller and admin guard boundaries remain unchanged in this pass.
+- `/shop` is the canonical storefront catalogue path.
+- `/products` redirects to `/shop` for compatibility.
+- `/products/:id` is the canonical product detail path.
+- `/product/:id` redirects to `/products/:id` while preserving the dynamic product ID.
+- `/search` remains the canonical search-results destination.
+- `/unauthorized` is registered once through the public route tree.
+- Existing customer, seller and admin guard boundaries remain unchanged.
 
 ## Search Changes
 
@@ -81,6 +93,7 @@ The legacy store remains available only for compatibility and has an isolated pe
 - One QueryClient configuration is used through the existing `QueryProvider`.
 - Existing route-level lazy loading remains in place.
 - Cart migration occurs only during persisted-state hydration and does not add render-time synchronization work.
+- Route aliases now redirect instead of loading duplicate catalogue/detail implementations.
 - No broad memoization or unnecessary dependencies were introduced.
 
 ## Remaining Issues
@@ -96,7 +109,7 @@ The repository still contains architectural candidates requiring a subsequent im
 - remaining ESLint Fast Refresh warnings;
 - search/catalogue internal state-to-URL synchronization requiring browser validation;
 - payment and wallet flows requiring integration-level validation rather than static inspection alone;
-- duplicate/alias route paths that should be classified as intentional aliases or consolidated in a later route-cleanup pass.
+- additional legacy route aliases should be reviewed against navigation/link usage before further consolidation.
 
 These were not deleted or rewritten blindly.
 
@@ -128,4 +141,4 @@ No changes were committed to `main` or `ai-upgrade-development` by this reconcil
 
 ## Status
 
-**PHASE 2 AGENT PASS — CART PERSISTENCE RECONCILIATION COMPLETE; LOCAL VALIDATION REQUIRED BEFORE MERGE.**
+**PHASE 2 AGENT PASS — CART PERSISTENCE AND STOREFRONT ROUTE RECONCILIATION COMPLETE; LOCAL VALIDATION REQUIRED BEFORE MERGE.**
