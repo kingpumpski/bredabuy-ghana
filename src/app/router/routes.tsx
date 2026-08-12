@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate, type RouteObject } from "react-router-dom";
+import { createBrowserRouter, Navigate, useParams, type RouteObject } from "react-router-dom";
 import type { ComponentType } from "react";
 import MainLayout from "@/app/layouts/MainLayout";
 import AuthLayout from "@/app/layouts/AuthLayout";
@@ -15,12 +15,17 @@ const lazy = (loader: () => Promise<PageModule>): Pick<RouteObject, "lazy"> => (
   lazy: async () => ({ Component: (await loader()).default }),
 });
 
+const LegacyProductRedirect = () => {
+  const { id } = useParams();
+  return <Navigate to={id ? `/products/${id}` : "/shop"} replace />;
+};
+
 const publicRoutes: RouteObject[] = [
   { index: true, ...lazy(() => import("@/pages/Home")) },
   { path: "shop", ...lazy(() => import("@/features/products/pages/ProductCataloguePage")) },
   { path: "products", element: <Navigate to="/shop" replace /> },
   { path: "products/:id", ...lazy(() => import("@/features/products/pages/ProductDetailsPage")) },
-  { path: "product/:id", element: <Navigate to="/products/:id" replace /> },
+  { path: "product/:id", element: <LegacyProductRedirect /> },
   { path: "search", ...lazy(() => import("@/features/products/pages/ProductCataloguePage")) },
   { path: "categories", ...lazy(() => import("@/pages/Categories")) },
   { path: "brands", ...lazy(() => import("@/pages/Brands")) },
