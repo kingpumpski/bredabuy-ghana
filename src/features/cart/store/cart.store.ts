@@ -14,9 +14,52 @@ interface CartStore {
   setCouponCode: (couponCode?: string) => void;
 }
 
+interface PersistedCartV0 {
+  items?: Array<{
+    id?: string;
+    name?: string;
+    image?: string;
+    price?: number;
+    quantity?: number;
+  }>;
+  couponCode?: string;
+}
+
 const normalizeQuantity = (quantity: number, availableStock: number) => {
   if (!Number.isFinite(quantity) || availableStock <= 0) return 0;
   return Math.max(1, Math.min(Math.floor(quantity), availableStock));
+};
+
+const migratePersistedCart = (persisted: unknown): CartStore => {
+  const value = persisted as PersistedCartV0 | undefined;
+  const legacyItems = Array.isArray(value?.items) ? value.items : [];
+
+  const items: CartItem[] = legacyItems.flatMap((item) => {
+    if (!item?.id || !item.name || !Number.isFinite(item.price)) return [];
+
+    const quantity = normalizeQuantity(
+      Number(item.quantity ?? 1),
+      Number.MAX_SAFE_INTEGER,
+    );
+
+    return quantity > 0
+      ? [{
+          id: `${item.id}:base`,
+          productId: item.id,
+          name: item.name,
+          sku: item.id,
+          image: item.image,
+          unitPrice: Number(item.price),
+          quantity,
+          availableStock: Number.MAX_SAFE_INTEGER,
+        }]
+      : [];
+  });
+
+  return {
+    items,
+    couponCode: value?.couponCode,
+  };
 };
 
 export const useCartStore = create<CartStore>()(
@@ -86,6 +129,10 @@ export const useCartStore = create<CartStore>()(
       clearCart: () => set({ items: [], couponCode: undefined }),
       setCouponCode: (couponCode) => set({ couponCode }),
     }),
-    { name: "bredabuy-cart" },
+    {
+      name: "bredabuy-cart",
+      version: 1,
+      migrate: (persistedState) => migratePersistedCart(persistedState),
+    },
   ),
 );
