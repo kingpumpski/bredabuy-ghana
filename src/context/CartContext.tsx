@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useMemo } from "react";
 
 import { toast } from "@/hooks/use-toast";
 import { useCartStore } from "@/features/cart/store/cart.store";
+import { cartService } from "@/features/cart/services/cart.service";
 import type { CartItem as MarketplaceCartItem } from "@/features/cart/types/cart.types";
 import type { Product as MarketplaceProduct, ProductVariant } from "@/features/products/types/product.types";
 import type { CartItem as LegacyCartItem, Product as LegacyProduct } from "@/types";
@@ -107,19 +108,18 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateStoreQuantity = useCartStore((state) => state.updateQuantity);
   const clearStore = useCartStore((state) => state.clearCart);
 
-  const items = useMemo(
-    () => storeItems.map(toLegacyCartItem),
-    [storeItems],
-  );
+  const items = useMemo(() => storeItems.map(toLegacyCartItem), [storeItems]);
+  const totals = useMemo(() => cartService.getTotals(storeItems), [storeItems]);
 
   const addToCart = useCallback(
     (product: CartProductInput, quantity = 1, variant?: ProductVariant) => {
       const item = toMarketplaceCartItem(product, quantity, variant);
+      const validation = cartService.validateItems([item]);
 
-      if (item.availableStock <= 0) {
+      if (!validation.valid) {
         toast({
-          title: "Out of Stock",
-          description: "This product configuration is currently unavailable.",
+          title: "Unable to add to cart",
+          description: validation.message,
           variant: "destructive",
         });
         return;
@@ -158,12 +158,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   }, [clearStore]);
 
-  const totalItems = storeItems.reduce((sum, item) => sum + item.quantity, 0);
-  const subtotal = storeItems.reduce(
-    (sum, item) => sum + item.unitPrice * item.quantity,
-    0,
-  );
-
   return (
     <CartContext.Provider
       value={{
@@ -172,8 +166,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         removeFromCart,
         updateQuantity,
         clearCart,
-        totalItems,
-        subtotal,
+        totalItems: totals.itemCount,
+        subtotal: totals.subtotal,
       }}
     >
       {children}
