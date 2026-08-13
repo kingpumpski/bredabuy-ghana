@@ -3,6 +3,8 @@ import {
   useQuery,
 } from "@tanstack/react-query";
 
+import { searchService } from "@/features/search/services/search.service";
+
 import { productService } from "../services/product.service";
 import { useProductStore } from "../store/product.store";
 
@@ -13,8 +15,15 @@ const PRODUCT_PAGE_SIZE = 12;
 
 export const productQueryKeys = {
   all: ["products"] as const,
-  list: (filters: ReturnType<typeof useProductStore.getState>["filters"], sort: ReturnType<typeof useProductStore.getState>["sort"], page: number) =>
-    ["products", "list", { filters, sort, page, pageSize: PRODUCT_PAGE_SIZE }] as const,
+  list: (
+    filters: ReturnType<typeof useProductStore.getState>["filters"],
+    sort: ReturnType<typeof useProductStore.getState>["sort"],
+    page: number,
+  ) => [
+    "products",
+    "list",
+    { filters, sort, page, pageSize: PRODUCT_PAGE_SIZE },
+  ] as const,
   detail: (idOrSlug: string) => ["products", "detail", idOrSlug] as const,
 };
 
@@ -26,8 +35,19 @@ export const useProducts = () => {
   return useQuery({
     queryKey: productQueryKeys.list(filters, sort, page),
     queryFn: () =>
-      productService.getProducts({
-        filters,
+      searchService.searchProducts({
+        query: filters.search,
+        filters: {
+          category: filters.category,
+          brand: filters.brand,
+          seller: filters.seller,
+          minPrice: filters.minPrice,
+          maxPrice: filters.maxPrice,
+          rating: filters.rating,
+          inStock: filters.inStock,
+          onSale: filters.onSale,
+          featured: filters.featured,
+        },
         sort,
         page,
         pageSize: PRODUCT_PAGE_SIZE,
