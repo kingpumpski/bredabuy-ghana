@@ -31,11 +31,15 @@ Order + seller fulfilment records
 Payment / shipment lifecycle
 ```
 
+## Existing lifecycle controls retained
+
+The existing checkout service already validates stock before reservation, creates the order around the controlled reservation flow, rolls the order back when reservation fails, and creates seller fulfilment records. The order service also enforces controlled status transitions and payment-confirmation rules. Those boundaries are intentionally preserved rather than duplicated.
+
 ## Deliberate non-changes
 
 - No second cart store was introduced.
 - No existing cart state was migrated or discarded.
-- Payment and order services were not rewritten because their existing lifecycle controls are already established.
+- Payment and order services were not rewritten because their lifecycle controls are already established.
 - Production persistence remains a backend concern; the current browser persistence is retained for the existing development architecture.
 
 ## Validation required in Codespaces
