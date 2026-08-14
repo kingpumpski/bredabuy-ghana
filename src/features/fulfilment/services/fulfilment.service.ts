@@ -1,4 +1,5 @@
 import orderService from "@/features/orders/services/order.service";
+import shipmentService from "@/features/logistics/services/shipment.service";
 import type { Order } from "@/features/orders/types/order.types";
 import type { FulfilmentRecord, FulfilmentStatus, FulfilmentSummary } from "../types/fulfilment.types";
 
@@ -104,6 +105,49 @@ export const fulfilmentService = {
     records[index] = updated;
     write(records);
     return updated;
+  },
+
+  dispatchWithShipment(
+    id: string,
+    carrier: { id: string; name: string },
+    estimatedDelivery?: string,
+  ): { fulfilment: FulfilmentRecord; trackingNumber: string } | null {
+    const record = this.getById(id);
+    if (!record || record.status !== "ready-for-dispatch" || !record.orderId) return null;
+    const order = orderService.getById(record.orderId);
+    if (!order || order.status !== "ready-for-dispatch" || order.paymentStatus !== "successful") return null;
+
+    const shipment = shipmentService.create({
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      fulfilmentId: record.id,
+      sellerId: record.sellerId,
+      carrierId: carrier.id,
+      carrierName: carrier.name,
+      destination: {
+        fullName: order.shippingAddress.fullName,
+        phone: order.shippingAddress.phone,
+        region: order.shippingAddress.region,
+        city: order.shippingAddress.city,
+        area: order.shippingAddress.area,
+        addressLine: order.shippingAddress.addressLine,
+        digitalAddress: order.shippingAddress.digitalAddress,
+      },
+      estimatedDelivery,
+    });
+
+    const dispatched = this.updateStatus(id, "dispatched");
+    if (!dispatched) return null;
+
+    const updatedOrder = orderService.dispatch(order.id, {
+      carrier: carrier.name,
+      trackingNumber: shipment.trackingNumber,
+      estimatedDelivery,
+    });
+    if (!updatedOrder) return null;
+
+    shipmentService.updateStatus(shipment.id, "label-created", "Shipment label created");
+    return { fulfilment: dispatched, trackingNumber: shipment.trackingNumber };
   },
 
   confirmPayment(id: string): FulfilmentRecord | null {
