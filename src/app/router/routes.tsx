@@ -1,18 +1,17 @@
+import { createBrowserRouter, type RouteObject } from "react-router-dom";
 import type { ComponentType } from "react";
-import { Navigate, createBrowserRouter, type RouteObject } from "react-router-dom";
-
-import AdminRoute from "@/app/guards/AdminRoute";
-import ProtectedRoute from "@/app/guards/ProtectedRoute";
-import PublicRoute from "@/app/guards/PublicRoute";
-import SellerRoute from "@/app/guards/SellerRoute";
-import AdminLayout from "@/app/layouts/AdminLayout";
+import MainLayout from "@/app/layouts/MainLayout";
 import AuthLayout from "@/app/layouts/AuthLayout";
 import DashboardLayout from "@/app/layouts/DashboardLayout";
-import MainLayout from "@/app/layouts/MainLayout";
+import AdminLayout from "@/app/layouts/AdminLayout";
 import SellerLayout from "@/app/layouts/SellerLayout";
+import ProtectedRoute from "@/app/guards/ProtectedRoute";
+import PublicRoute from "@/app/guards/PublicRoute";
+import AdminRoute from "@/app/guards/AdminRoute";
+import SellerRoute from "@/app/guards/SellerRoute";
+import RouteErrorPage from "./RouteErrorPage";
 
 type PageModule = { default: ComponentType };
-
 const lazy = (loader: () => Promise<PageModule>): Pick<RouteObject, "lazy"> => ({
   lazy: async () => ({ Component: (await loader()).default }),
 });
@@ -34,6 +33,7 @@ const publicRoutes: RouteObject[] = [
   { path: "track-order", ...lazy(() => import("@/features/logistics/pages/TrackShipmentPage")) },
   { path: "about", ...lazy(() => import("@/pages/About")) },
   { path: "contact", ...lazy(() => import("@/pages/Contact")) },
+  { path: "unauthorized", ...lazy(() => import("@/pages/Unauthorized")) },
 ];
 
 const authRoutes: RouteObject[] = [
@@ -96,30 +96,33 @@ const adminRoutes: RouteObject[] = [
   { path: "/admin/settings", ...lazy(() => import("@/features/admin/pages/SystemSettings")) },
 ];
 
-const router = createBrowserRouter([
-  { path: "/", element: <MainLayout />, children: publicRoutes },
+export default createBrowserRouter([
+  {
+    path: "/",
+    element: <MainLayout />,
+    errorElement: <RouteErrorPage />,
+    children: publicRoutes,
+  },
   {
     element: <AuthLayout />,
-    children: [
-      { element: <PublicRoute />, children: authRoutes.slice(0, 3) },
-      ...authRoutes.slice(3),
-    ],
+    errorElement: <RouteErrorPage />,
+    children: [{ element: <PublicRoute />, children: authRoutes.slice(0, 3) }, ...authRoutes.slice(3)],
   },
   {
     element: <ProtectedRoute />,
+    errorElement: <RouteErrorPage />,
     children: [{ element: <DashboardLayout />, children: accountRoutes }],
   },
   {
     element: <SellerRoute />,
+    errorElement: <RouteErrorPage />,
     children: [{ element: <SellerLayout />, children: sellerRoutes }],
   },
   {
     element: <AdminRoute />,
+    errorElement: <RouteErrorPage />,
     children: [{ element: <AdminLayout />, children: adminRoutes }],
   },
-  { path: "/wishlist", element: <Navigate to="/account/wishlist" replace /> },
-  { path: "/unauthorized", ...lazy(() => import("@/pages/Unauthorized")) },
-  { path: "*", ...lazy(() => import("@/pages/NotFound")) },
+  { path: "/unauthorized", ...lazy(() => import("@/pages/Unauthorized")), errorElement: <RouteErrorPage /> },
+  { path: "*", ...lazy(() => import("@/pages/NotFound")), errorElement: <RouteErrorPage /> },
 ]);
-
-export default router;
